@@ -1,70 +1,39 @@
-// import React, { Suspense } from 'react'
-// import { Navigate, Route, Routes } from 'react-router-dom'
-// import { CContainer, CSpinner } from '@coreui/react'
-
-// // routes config
-//  import routes from '../Routes'
-// import PatientMain from '../views/base/PatientBill/Main/PatientMain'
-
-// const AppContent = () => {
-//   return (
-//     <CContainer className="px-4" lg>
-//       <Suspense fallback={<CSpinner color="primary" />}>
-//         <Routes>
-//           {routes.map((route, idx) => {
-//             return (
-//               route.element && (
-//                 <Route
-//                   key={idx}
-//                   path={route.path}
-//                   exact={route.exact}
-//                   name={route.name}
-//                   element={<route.element />}
-//                 />
-//               )
-//             )
-//           })}
-//           <Route path="/" element={<Navigate to="dashboard" replace />} />
-//           <Route path="/proceedtobill" element={< PatientMain/>} />
-//         </Routes>
-//       </Suspense>
-//     </CContainer>
-//   )
-// }
-
-// export default React.memo(AppContent)
 import React, { Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { CContainer, CSpinner } from '@coreui/react'
-import './AppContent.css' // Add this import for your custom CSS
-
-// routes config
-import routes from '../Routes'
-import PatientMain from '../views/base/PatientBill/Main/PatientMain'
-import InvoiceView from '../views/base/LabInvoice/LabInvoiceView'
+import Dashboard from '../views/dashboard/Dashboard'
+import CurrentWorkList from '../views/base/Current Work List/CurrentWorkList'
+import TicketList from '../views/base/Ticket List/TicketList'
+import TransferDetails from '../views/base/Transfer Details/TransferDetails'
+import TagList from '../views/base/Tag List/TagList'
+import CustomerDetails from '../views/base/CustomerDetails/CustomerDetails'
+import TotalWorkList from '../views/base/Total WorkList/TotalWorkList'
+import ServicesandSolutions from '../views/base/Services&Solutions/ServicesandSolutions'
+import AllReports from '../views/base/All Reports/AllReports'
+import OverAllworkReports from '../views/base/All Reports/OverAllworkReports'
+import ServiceView from '../views/base/All Reports/ServiceView'
+import CreateNewUser from '../views/base/Create New User/CreateNewUser'
+import WorkStatus from '../views/base/Work Status/WorkStatus'
 
 const AppContent = () => {
   return (
-    <CContainer className="app-content px-4" lg> {/* Add custom class */}
+    <CContainer fluid>
       <Suspense fallback={<CSpinner color="primary" />}>
         <Routes>
-          {routes.map((route, idx) => {
-            return (
-              route.element && (
-                <Route
-                  key={idx}
-                  path={route.path}
-                  exact={route.exact}
-                  name={route.name}
-                  element={<route.element />}
-                />
-              )
-            )
-          })}
-          <Route path="/" element={<Navigate to="dashboard" replace />} />
-          <Route path="/proceedtobill" element={<PatientMain />} />
-          <Route path="/proceedtobill/:labno" element={<PatientMain />} />
-          <Route path="/invoice" element={<InvoiceView />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/CurrentWrkList" element={<CurrentWorkList />} />
+          <Route path="/TicketLists" element={<TicketList />} />
+          <Route path="/CustomerDetails" element={<CustomerDetails />} />
+          <Route path="/TransferDetails" element={<TransferDetails />} />
+          <Route path="/TagList" element={<TagList />} />
+          <Route path="/SortCusList" element={<TotalWorkList />} />
+          <Route path="/AllReports" element={<AllReports />} />
+          <Route path="/ServiceSolution" element={<ServicesandSolutions />} />
+          <Route path="/overAllReports" element={<OverAllworkReports />} />
+          <Route path="/serviceView" element={<ServiceView />} />
+          <Route path="/CreateNewUser" element={<CreateNewUser />} />
+          <Route path="/WorkStatus" element={<WorkStatus />} />
         </Routes>
       </Suspense>
     </CContainer>

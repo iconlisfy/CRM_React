@@ -66,8 +66,8 @@
 
 /* Force light mode */
 body {
-  background-color: var(--cui-tertiary-bg);
-  color-scheme: light; 
+  // background-color: var(--cui-tertiary-bg);
+  // color-scheme: light; 
 }
 
 .wrapper {
@@ -120,14 +120,14 @@ body {
 }
 
 /* Remove or comment out the dark mode styles */
- @if $enable-dark-mode {
-   @include color-mode(dark) {
-     body {
-       background-color: var(--cui-dark-bg-subtle);
-     }
+//  @if $enable-dark-mode {
+  //  @include color-mode(dark) {
+    //  body {
+    //    background-color: var(--cui-dark-bg-subtle);
+    //  }
 
-     .footer {
-        --cui-footer-bg: var(--cui-body-bg);
-     }
-   }
- }
+    //  .footer {
+    //     --cui-footer-bg: var(--cui-body-bg);
+    //  }
+  //  }
+//  }

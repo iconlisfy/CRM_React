@@ -1,0 +1,91 @@
+Password : Icon#ealth@6060
+
+
+
+const handleEnter = async (matchedTest) => {
+    if (!matchedTest) {
+        setIsProcessing(false);
+        return;
+    }
+
+    const existingTests = labData?.InvTestDlts || [];
+    const newTests = rows.map(row => ({ TestGrpId: row.tstkey }));
+    const testList = [
+        ...existingTests.map(test => ({ TestGrpId: test.tstid })),
+        ...newTests
+    ];
+
+    const validationResponse = await validateSingleGroupTest(matchedTest.tstkey, testList);
+
+    if (!validationResponse.Success) {
+        setDialogMessage(validationResponse.message);
+        if (validationResponse.flag === 1) {
+            setTestToAdd({
+                matchedTest,
+                reportTimeInHours: convertToHours(matchedTest.RptD, matchedTest.RptTD),
+                finalPrice: specialRates.find(rate => rate.TestKey === matchedTest.tstkey)?.OrgnlRate || matchedTest.Rate,
+                finalDiscount: specialRates.find(rate => rate.TestKey === matchedTest.tstkey)?.DiscPer || (matchedTest.Discper || 0)
+            });
+        }
+        setDialogOpen(true);
+        setIsProcessing(false);
+        return;
+    }
+
+    addTestRow(matchedTest);
+
+    setTimeout(() => {
+        testCodeRef.current?.focus();
+        setIsProcessing(false);
+    }, 100);
+};
+
+
+const handleTestSelection = (event, value, reason, name) => {
+    if (reason === 'clear') {
+        setCurrentRow({ ...currentRow, testCode: '', testName: '', price: 0, discount: 0, testkey: '', RptD: '', RptTD: '', typeId: '', divId: '' });
+        return;
+    }
+    if (reason !== 'selectOption' || !value) return;
+
+    const matchedTest = testdata.find(test => (name === 'testCode' && test.Shortname?.toLowerCase() === value.toLowerCase()) || (name === 'testName' && test.tstname?.toLowerCase() === value.toLowerCase()));
+    
+    if (!matchedTest) return;
+
+    const specialRate = specialRates.find(rate => rate.TestKey === matchedTest.tstkey);
+    const finalPrice = specialRate ? specialRate.OrgnlRate : matchedTest.Rate;
+    const finalDiscount = specialRate ? specialRate.DiscPer : (matchedTest.Discper || 0);
+    
+    // Now, call the new function to handle the addition
+    handleEnter(matchedTest);
+
+    setCurrentRow({ ...currentRow, testCode: matchedTest.Shortname, testName: matchedTest.tstname, price: finalPrice, discount: finalDiscount, testkey: matchedTest.tstkey, RptD: matchedTest.RptD, RptTD: matchedTest.RptTD, typeId: matchedTest.typeId, divId: matchedTest.divId });
+
+    setTimeout(() => {
+        const nextIndex = combinedData.length + 1;
+        if (name === 'testCode' && testCodeRefs.current[nextIndex]) {
+            testCodeRefs.current[nextIndex].focus();
+        } else if (name === 'testName' && testNameRefs.current[nextIndex]) {
+            testNameRefs.current[nextIndex].focus();
+        }
+    }, 100);
+};const handleKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (isProcessing) return;
+        setIsProcessing(true);
+
+        if (currentRow.testCode || currentRow.testName) {
+            const matchedTest = testdata.find(test => {
+                const codeMatch = currentRow.testCode && test.Shortname?.toLowerCase() === currentRow.testCode.toLowerCase();
+                const nameMatch = currentRow.testName && test.tstname?.toLowerCase() === currentRow.testName.toLowerCase();
+                return codeMatch || nameMatch;
+            });
+
+            // Call the new handler
+            handleEnter(matchedTest);
+        } else {
+            setIsProcessing(false);
+        }
+    }
+};

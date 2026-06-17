@@ -1,41 +1,45 @@
 
 .sidebar-dark {
-    --cui-body-color: rgba(255, 255, 255, 0.87);
-    --cui-body-bg:  var(--primary-bg-color);;
-    --cui-emphasis-color: #fff;
-    --cui-secondary-color: rgba(255, 255, 255, 0.6);
-    --cui-secondary-bg: #323a49;
-    --cui-tertiary-color: rgba(255, 255, 255, 0.38);
-    --cui-tertiary-bg: #2a303d;
-    --cui-border-color: #b49898;
+    --cui-body-color:var(--sidebar-font-color);
+    --cui-body-bg:  var(--primary-bg-color);
+    /* --cui-emphasis-color: #fff;
+    --cui-secondary-color: rgba(255, 255, 255, 0.6); */
+    /* --cui-secondary-bg: #323a49; */
+    /* --cui-tertiary-color: rgba(255, 255, 255, 0.38); */
+    /* --cui-tertiary-bg: #2a303d;
+    --cui-border-color: #b49898; */
 }
 body {
     margin: 0;
-    font-family: var(--cui-body-font-family);
+     font-family: var(--cui-body-font-family);
     font-size: var(--cui-body-font-size);
     font-weight: var(--cui-body-font-weight);
     line-height: var(--cui-body-line-height);
-    color: var(--cui-body-color);
+    /* color: var(--cui-body-color); */
     text-align: var(--cui-body-text-align);
-    background-color: #fbefef;
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: rgba(8, 10, 12, 0);
+    background-color:  var(--secondary-color);
+    /* background-color: #fbefef; */
+    /* -webkit-text-size-adjust: 100%; */
+    /* -webkit-tap-highlight-color: rgba(8, 10, 12, 0); */
 }
 .header {
     --cui-header-padding-x: 0.5rem;
     --cui-header-padding-y: 0.5rem;
-    --cui-header-bg: #fbefef;
+    /* --cui-header-bg: #fbefef; */
+    /* --cui-header-bg: var(--secondary-color);
     --cui-header-color: rgba(var(--cui-emphasis-color-rgb), 0.65);
     --cui-header-border-color: var(--cui-border-color);
     --cui-header-border: var(--cui-border-width) solid var(--cui-header-border-color);
     --cui-header-hover-color: rgba(var(--cui-emphasis-color-rgb), 0.8);
     --cui-header-disabled-color: rgba(var(--cui-emphasis-color-rgb), 0.3);
-    --cui-header-active-color: rgba(var(--cui-emphasis-color-rgb), 1);
+    --cui-header-active-color: rgba(var(--cui-emphasis-color-rgb), 1); */
 }
-.border-bottom {
-    border-bottom: var(--bs-border-width) var(--bs-border-style) #7e8691 !important;
+/* .border-bottom {
+    border-bottom: var(--bs-border-width) var(--bs-border-style) var( --primary-bg-color) !important;
 }
-
+.border-end {
+    border-right: var(--bs-border-width) var(--bs-border-style) var( --primary-bg-color) !important;
+} */
 /* Media Query for screens wider than 993px to reduce sidebar height */
 @media (min-width: 993px) {
     .sidebar-dark {

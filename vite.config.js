@@ -36,10 +36,13 @@ export default defineConfig(() => {
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json'],
     },
     server: {
+      host: '0.0.0.0', //  allows access from network IPs
       port: 5173,
+      cors: true,      // optional, helps with cross-device testing
       proxy: {
         '/api': {
-          target: 'http://172.16.16.10:8060',
+          target: 'http://172.16.16.10:8087',
+         //    target: 'http://172.16.16.10:8067',
           changeOrigin: true,
           secure: false,
           rewrite: (path) => path.replace(/^\/api/, '')

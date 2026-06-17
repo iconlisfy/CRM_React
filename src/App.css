@@ -1,19 +1,87 @@
+*{
+
+  /* font-family: 'Roboto', Arial, sans-serif;  */
+  /* font-family: Arial, Helvetica, sans-serif; */
+}
+* {
+  font-family: 'Poppins', sans-serif !important;
+}
+
 #root{
     zoom: 80%;
-    --primary-bg-color: #bd2937;
-    --header-bg-color: #bd2937;
+   
 }
-.commonColor{
-    background-color: #bd2937;
+:root {
+  /* Button colors*/
+  --primary-btn-fontColor:#20bd44;
+  --primary-btn-border:1px solid #20bd44;
+  --delete-btn-fontColor:#DC3545;
+  --delete-btn-border:1px solid #DC3545;
+  --primary-btn-color:#28A745;
+  --primary-btn-hoverColor:#20bd44;
+  --secondary-btn-color:#0E87CA;
+  --secondary-btn-hoverColor:#0798e8;
+  --tertiary-btn-color:#DC3545;
+  --tertiary-btn-hoverColor:#e32739;
+/*primary heading color in pages*/
+--primary-heading-color:#DC3545;
+/* secondary font color*/
+--secondary-font-color:#28A745;
+
+    /*primary color sidebar*/
+  --primary-bg-color: #DC3545; 
+
+  /* modal header color */
+  --primary-modalheader-color: #DC3545; 
+
+  /* colortone background color*/
+  --secondary-color: #F2F2F2; 
+
+  /* header color*/
+  --primary-header-color:#343A40;
+
+/* table header color*/
+  --header-bg-color: #d6d1d1; 
+
+/* focus color*/
+  --focus-bg-color:#adff2f;
+
+/* patient card heading color */
+  --card-header-color:black; 
+  
+  /* patinet card font color */ 
+  --card-font-color:#b0b0b0; 
+  --main-font-color:#fff; 
+
+  /* checkbox color*/
+  --primary-checkbox-color:#DC3545;
+  /*menu item font color*/
+  --primary-menuFont-color:#C0C0C0;
+  --menuFont-hover-color:#ffffff;
 }
+
+  /* :root {
+  --primary-bg-color: #1c5508;
+    --secondary-color: #e3ede2;
+    --primary-bg-color: #ffffff;  
+    --secondary-color: #e8eefa;
+    --header-bg-color: #d6d1d1;
+    --focus-bg-color:#adff2f; 
+    --card-header-color:black;
+    --card-font-color:#b0b0b0; 
+    --main-font-color:#000; 
+   
+  }  */
+
 /* Hide scrollbar for WebKit-based browsers (Chrome, Safari) */
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    overflow-y: scroll; 
-    font-family: Arial, sans-serif;
+     overflow-y: scroll;  
+     /* font-family: 'Arial', 'Helvetica', sans-serif;  */
+     /* font-family: 'Poppins', sans-serif; */
 }
 
 html::-webkit-scrollbar, body::-webkit-scrollbar {
@@ -21,34 +89,70 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
     background: transparent; 
 }
 
-.css-1aquho2-MuiTabs-indicator {
+/* .css-1aquho2-MuiTabs-indicator {
     position: absolute;
     height: 2px;
     bottom: 0;
     width: 100%;
     -webkit-transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
     transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-    background-color: #e55353;
+    background-color: var(--primary-bg-color) !important;
     
-  }
-  .css-hg18dx-MuiButtonBase-root-MuiTab-root.Mui-selected {
-    color: #e55353;
+  } */
+  /* .css-hg18dx-MuiButtonBase-root-MuiTab-root.Mui-selected {
+    color: var(--primary-bg-color) !important;
     
-  }
+  } */
 
-/* Hide scrollbar for other browsers */
-/* html, body {
-    scrollbar-width: none; 
-    -ms-overflow-style: none;  
-} */
-/* Media Query for screens wider than 993px to reduce sidebar height */
-/* @media (min-width: 993px) {
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-    overflow-y: scroll; 
-    font-family: Arial, sans-serif;
+  /* @media (min-width: 1920px) {
+   
+#root{
+  zoom: 90%;
+ 
 }
+  } */
+/* .react-datepicker {
+  z-index: 1500 !important;
+}
+
+.react-datepicker-popper {
+  z-index: 1500 !important;
 } */
+.body{
+  padding-bottom: 80px;
+}
+
+.react-datepicker-popper {
+  z-index: 1500 !important; /* Higher than MUI tables or dialogs */
+}
+
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+.fixed-quill {
+  width: 800px !important;
+  height: 300px !important;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: white;
+}
+
+.fixed-quill .ql-container {
+  height: 100% !important;
+}
+
+.fixed-quill .ql-editor {
+  min-height: 260px !important;
+  max-height: 260px !important;
+  overflow-y: auto;
+}
+  /* Global Checkbox Checked Color */
+.MuiCheckbox-root.Mui-checked {
+  color: var(--primary-checkbox-color) !important;
+}
+
+/* Global Radio Button Checked Color */
+.MuiRadio-root.Mui-checked {
+  color: var(--primary-checkbox-color) !important;
+}

@@ -1,35 +1,79 @@
-/* #root{
-    zoom: 100%;
+/* Root (optional) */
+/* #root {
+  zoom: 100%;
 } */
 
+/* Common color */
+.ColorCommon {
+  color: #bd2937;
+}
 
-.ColorCommon{
-    color: #bd2937;
- }
+/* Input styling (kept from your design) */
+.input {
+  width: 100%;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 10px;
 
- 
- /* From Uiverse.io by lenfear23 */ 
- .input {
-    max-width: 200px;
-    min-height: 1px;
-    height: 10px;
- 
-    padding: 10px;
-    font-family: 'Courier New', Courier, monospace;
-    outline: none;
-    background: #ffffff;
-    box-shadow: inset 5px 5px 17px #c8c8c8,
+  font-family: 'Courier New', Courier, monospace;
+  outline: none;
+
+  background: #ffffff;
+  box-shadow: inset 5px 5px 17px #c8c8c8,
               inset -5px -5px 17px #ffffff;
-    border: none;
-    border-radius: 10px;
-    transition: all .5s;
-  }
- 
-  /* .button{
-    background-color: #bb4d58 !important;
-  }
-  .button:hover{
-    background-color: #bd2937 !important;
-  } */
-  
-  
+
+  border: none;
+  border-radius: 10px;
+
+  transition: all 0.3s ease;
+}
+
+.input:focus {
+  box-shadow: inset 2px 2px 10px #c8c8c8,
+              inset -2px -2px 10px #ffffff;
+}
+
+/* Button (optional if you reuse later) */
+/*
+.button {
+  background-color: #bb4d58 !important;
+}
+
+.button:hover {
+  background-color: #bd2937 !important;
+}
+*/
+
+/* 🔥 Logo FIX — fully responsive and centered */
+.Logo2 {
+  display: block;
+  margin: 0 auto;          /* centers horizontally */
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Optional: container helper if you want full-page center from CSS */
+.fullCenter {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Optional: form card styling (if you move styles from MUI to CSS) */
+.loginCard {
+  width: 90%;
+  max-width: 420px;
+  padding: 20px;
+
+  background: #ffffff;
+  border-radius: 12px;
+
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

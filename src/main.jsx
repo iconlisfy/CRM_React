@@ -4,17 +4,17 @@ import { Provider } from 'react-redux';
 import store from './Store'; // Import the store
 import App from './App';
 import './App.css';
-import { PatientProvider } from './views/base/patient/PatientContext';
+import { configReady } from './base';
 // Use createRoot to render your application
 const root = document.getElementById('root');
+configReady.then(() => {
 createRoot(root).render(
   <React.StrictMode>
    
     <Provider store={store}>
-    <PatientProvider>
       <App />
-      </PatientProvider>
     </Provider>
    
   </React.StrictMode>
 );
+});

@@ -1,328 +1,465 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+
+
+import React, { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import {
-  CContainer,
-  CDropdown,
-  CDropdownItem,
-  CDropdownMenu,
-  CDropdownToggle,
-  CHeader,
-  CHeaderNav,
-  CHeaderToggler,
-  CNavLink,
-  CNavItem,
-  useColorModes,
-} from '@coreui/react'
+import { CContainer, CDropdown, CHeader, CHeaderNav, CHeaderToggler, } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import {
-  cilBell,
-  cilContrast,
-  cilEnvelopeOpen,
-  cilList,
-  cilMenu,
-  cilMoon,
-  cilSun,
-} from '@coreui/icons'
+import { cilMenu, } from '@coreui/icons'
 import './AppHeader.css';
-import AppMenu from './AppMenu';
-import { AppBar, Toolbar, Button, Box, Menu, MenuItem, useMediaQuery, useTheme ,} from '@mui/material';
-import config from '../Config'
-
-// import { AppBreadcrumb } from './index'
-//  import { AppHeaderDropdown } from './header/Index'
-
+import { Menu, Grid, MenuItem, useMediaQuery, useTheme, Avatar, Paper, Box, Typography, Fade, Divider, ClickAwayListener, IconButton, Dialog, DialogContent, DialogActions, Button, Popover } from '@mui/material';
+import avatar from "../assets/images/trans2.png"
+import image from '../assets/images/common.png'
+import axiosInstance from '../axios'
+import { decryptData, encryptAES } from '../utils/Encryption'
+import getReduxState from '../ReduxState'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import iconlogo from '../assets/images/iconinfoware logo.png'
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import InputIcon from '@mui/icons-material/Input';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Badge from '@mui/material/Badge';
+import { useWorkList } from '../Context/WorkListContext'
+import LockIcon from '@mui/icons-material/Lock';
+import ChangePassword from '../views/base/Change Password/ChangePassword'
 const AppHeader = () => {
+  const encryptionKey = "sblw-3hn8-sqoy19";
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { username, dept, empId } = getReduxState();
+
+  const { transCount, transferData, setSelectedTransData, setShouldHighlight, payableCount, payableData, } = useWorkList();
+
+  const [notifAnchorEl, setNotifAnchorEl] = useState(null);
+  const handleNotifOpen = (event) => setNotifAnchorEl(event.currentTarget);
+  const handleNotifClose = () => setNotifAnchorEl(null);
+  const notifOpen = Boolean(notifAnchorEl);
+
+  // const username = decryptData(username, encryptionKey)
   const headerRef = useRef()
-  const dispatch = useDispatch()
-  const sidebarShow = useSelector((state) => state.sidebarShow)
-  // const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
-  const [username, setUsername] = useState('');
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const [openChangePassword, setOpenChangePassword] = useState(false);
+
+  // const handleLogout = () => {
+  //   // 1. Clear Redux state
+  //   dispatch({ type: 'Logout' });
+
+  //   // 2. Clear localStorage/sessionStorage if used
+  //   localStorage.clear();
+  //   sessionStorage.clear();
+
+  //   // 3. Redirect to login page
+  //   navigate("/login");
+
+  //   // 4. Close the dialog
+  //   setOpenDialog(false);
+  // };
+
+  const handleLogout = async () => {
+
+    const encryptedempId = encryptAES(empId.toString(), encryptionKey);
+    try {
+      if (encryptedempId) {
+        console.log('empkey', empId);
+
+
+        // API call to log out the user
+        const response = await axiosInstance.post(
+          `/UserLogin/LoginByUsername?encryptedEMPID=${encryptedempId}`
+        );
+
+        if (response.status === 200) {
+          console.log("Logout successful");
+          dispatch({ type: 'Logout' });
+
+          // Redirect to login page
+          navigate("/login");
+        } else {
+          console.error("Logout failed");
+        }
+      } else {
+        console.error("Employee ID is missing");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+    finally {
+      setOpenDialog(false); // close dialog
+    }
+  }
+
+
+  const sidebarShow = useSelector((state) => state.sidebarShow);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const handleClose = () => {
+    setAnchorEl(null); // Close the menu
+  };
+
+  
+  const open = Boolean(anchorEl);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check if it's mobile view
-  useEffect(() => {
-    const storedUsername = config.public_userName;
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-  }, []);
-  // if (isMobile) {
-  //   return null; // Return nothing for desktop mode
-  // }
+  const toggleCard = (event) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+
+  const handleSelectTransTkt = (ticketNo) => {
+    setSelectedTransData(ticketNo)
+    setShouldHighlight(true)
+    handleNotifClose();
+    navigate('/CurrentWrkList');
+  }
+
+  const totalNotificationCount =
+    transCount + (dept === "Accounts" ? payableCount : 0);
+
+
+  //  console.log("payable data", payableData)
+
   return (
-    <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
-      <CContainer className="border-bottom px-4" fluid>
-        <CHeaderToggler
-          onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
-          style={{ marginInlineStart: '-14px' }}
+    <CHeader position="sticky" className="mb-4 p-0 c-header" ref={headerRef} style={{ backgroundColor: '#ffffff' }}>
+      <CContainer className="" fluid>
+
+        <Grid container alignItems="center" >
+
+          {/* MENU BUTTON */}
+          <CHeaderToggler
+            onClick={() =>
+              dispatch({
+                type: 'set',
+                payload: { sidebarShow: !sidebarShow },
+              })
+            }
+            style={{ marginInlineStart: '-8px' }}
+          >
+            <CIcon
+              icon={cilMenu}
+              size="lg"
+              style={{
+                color: '#2f4050',
+                transform: 'scale(1.15)',
+              }}
+            />
+          </CHeaderToggler>
+
+          {/* LOGO */}
+          <Grid item sx={{ ml: 1 }} >
+            <Box
+              component="img"
+              src={iconlogo}
+              alt="Logo"
+              sx={{
+                width: 200,
+                height: 'auto',
+              }}
+            />
+          </Grid>
+
+          {/* PUSH RIGHT CONTENT */}
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* RIGHT SECTION */}
+          <Grid item>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+
+              <Typography
+                sx={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'grey',
+                  whiteSpace: 'nowrap'
+                }}>
+                WELCOME TO ICON INFOWARE TECHNOLOGIES
+              </Typography>
+
+
+
+              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+
+                <IconButton
+                  onClick={() => setOpenChangePassword(true)}
+                  size="small"
+                  sx={{
+                    color: openChangePassword ? '#DC3545' : '#555',
+                    '&:hover': { backgroundColor: '#fff0f0', color: '#DC3545' },
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  <LockIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  onClick={handleNotifOpen}
+                  size="small"
+                  sx={{
+                    color: notifOpen ? '#DC3545' : '#555',
+                    '&:hover': { backgroundColor: '#fff0f0', color: '#DC3545' },
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  <NotificationsIcon fontSize="small" />
+                </IconButton>
+                {totalNotificationCount > 0 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 3,
+                      backgroundColor: '#DC3545',
+                      color: '#fff',
+                      borderRadius: '50%',
+                      width: 15,
+                      height: 15,
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1,
+                      pointerEvents: 'none',
+                    }}>
+                    {totalNotificationCount}
+                  </Box>
+                )}
+              </Box>
+
+              <Popover
+                open={notifOpen}
+                anchorEl={notifAnchorEl}
+                onClose={handleNotifClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{
+                  elevation: 4,
+                  sx: {
+                    mt: 1,
+                    borderRadius: '5px',
+                    width: 380,
+                    maxHeight: 480,
+                    overflow: 'hidden',
+                    border: '1px solid #f0f0f0',
+                  }
+                }}
+              >
+                {/* <Box sx={{ overflowY: 'auto', maxHeight: 420 }}>
+                  {transferData.length === 0 ? (
+                    <Box sx={{ py: 4, textAlign: 'center' }}>
+                      <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>No transfer requests</Typography>
+                    </Box>
+                  ) : (
+                    transferData.map((item, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          px: 2, py: 1.5,
+                          borderBottom: index < transferData.length - 1 ? '1px solid #f5f5f5' : 'none',
+                          '&:hover': { backgroundColor: '#fff8f8' },
+                          transition: 'background 0.15s',
+                          cursor: 'pointer',
+                        }}>
+
+                        <Typography sx={{
+                          fontSize: '0.78rem', color: '#212529', mb: 0.5,
+                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                        }} onClick={() => handleSelectTransTkt(item.TicketNo)}>
+                          TransTicket:"{item.TicketNo}" Work Transfered
+                          By {item.WorktransferredBy}
+                        </Typography>
+
+                      </Box>
+                    ))
+                  )}
+                </Box> */}
+                <Box sx={{ overflowY: 'auto', maxHeight: 420 }}>
+
+                  {/* Transfer Notifications */}
+                  {transferData.map((item, index) => (
+                    <Box
+                      key={`transfer-${index}`}
+                      sx={{
+                        px: 2,
+                        py: 1.5,
+                        borderBottom: '1px solid #f5f5f5',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => handleSelectTransTkt(item.TicketNo)}
+                    >
+                      <Typography sx={{ fontSize: '0.78rem' }}>
+                        🔄 Ticket "{item.TicketNo}" transferred by {item.WorktransferredBy}
+                      </Typography>
+                    </Box>
+                  ))}
+
+                  {/* Show only for Accounts */}
+                  {dept === "Accounts" &&
+                    payableData.map((item, index) => (
+                      <Box
+                        key={`payable-${index}`}
+                        sx={{
+                          px: 2,
+                          py: 1.5,
+                          borderBottom: '1px solid #f5f5f5',
+                          backgroundColor: '#fff8e1'
+                        }}
+                      >
+                        <Typography sx={{ fontSize: '0.78rem' }}>
+                          💰 Payable Service - Ticket "{item.ticketno}"" CreatedBy:"{item.CreatedBy}"
+                        </Typography>
+                        {item.PayableServNote && (
+                          <Typography
+                            sx={{
+                              fontSize: '0.72rem',
+                              color: '#666',
+                              mt: 0.5
+                            }}
+                          >
+                            Note: {item.PayableServNote}
+                          </Typography>
+                        )}
+                      </Box>
+                    ))}
+
+                  {transferData.length === 0 &&
+                    (dept !== "Accounts" || payableData.length === 0) && (
+                      <Box sx={{ py: 4, textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
+                          No notifications
+                        </Typography>
+                      </Box>
+                    )}
+
+                </Box>
+              </Popover>
+
+              {/* USER */}
+              <Box
+                sx={{
+                  py: 1.5,
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                <IconButton
+                  onClick={() => setOpenDialog(true)}
+                  sx={{
+                    color: 'action.active',
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    fontWeight: 600, // applies to text inside
+                    '&:hover': {
+                      backgroundColor: '#f0f0f0',
+                    }
+                  }}
+                >
+                  <LogoutIcon sx={{ fontSize: 24 }} />  {/* slightly bigger = bolder look */}
+
+                  <Typography
+                    sx={{
+                      fontSize: '0.90rem',
+                      fontWeight: 600   // ✅ bold text
+                    }}
+                  >
+                    Logout
+                  </Typography>
+                </IconButton>
+              </Box>
+
+            </Box>
+          </Grid>
+
+        </Grid>
+
+        <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              padding: 1,
+              minWidth: 320
+            }
+          }}
         >
-          <CIcon icon={cilMenu} size="lg" />
-        </CHeaderToggler>
-        {/* <CHeaderNav className="d-none d-md-flex"> */}
-    {/* <AppMenu/> */}
-    {!isMobile && (
-      <AppMenu/>
-    )}
+          <DialogContent sx={{ textAlign: 'center', py: 3 }}>
 
-        {/* <nav className="navbar navbar-expand-lg bg-body-tertiary">
-  <div className="container-fluid">
-    <ul className="navbar-nav">
-    
-      <li className="nav-item dropdown">
-        <a
-          data-mdb-dropdown-init=""
-          className="nav-link dropdown-toggle"
-          href="#"
-          id="navbarDropdownMenuLink"
-          role="button"
-          data-mdb-toggle="dropdown"
-          aria-expanded="false"
-        >
-          Dropdown link
-        </a>
-        <ul className="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-          <li>
-            <a className="dropdown-item" href="#">
-              Action
-            </a>
-          </li>
-          <li>
-            <a className="dropdown-item" href="#">
-              Another action
-            </a>
-          </li>
-          <li>
-            <a className="dropdown-item" href="#">
-              Submenu »
-            </a>
-            <ul className="dropdown-menu dropdown-submenu">
-              <li>
-                <a className="dropdown-item" href="#">
-                  Submenu item 1
-                </a>
-              </li>
-              <li>
-                <a className="dropdown-item" href="#">
-                  Submenu item 2
-                </a>
-              </li>
-              <li>
-                <a className="dropdown-item" href="#">
-                  Submenu item 3 »{" "}
-                </a>
-                <ul className="dropdown-menu dropdown-submenu">
-                  <li>
-                    <a className="dropdown-item" href="#">
-                      Multi level 1
-                    </a>
-                  </li>
-                  <li>
-                    <a className="dropdown-item" href="#">
-                      Multi level 2
-                    </a>
-                  </li>
-                </ul>
-              </li>
-              <li>
-                <a className="dropdown-item" href="#">
-                  Submenu item 4
-                </a>
-              </li>
-              <li>
-                <a className="dropdown-item" href="#">
-                  Submenu item 5
-                </a>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-    </ul>
-  </div>
-</nav> */}
+            {/* ICON */}
+            <WarningAmberIcon
+              sx={{
+                fontSize: 50,
+                color: '#f57c00',
+                mb: 1
+              }}
+            />
 
+            {/* TITLE */}
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Confirm Logout
+            </Typography>
 
-{/*        
-          <CNavItem>
-            <CNavLink to="/dashboard" as={NavLink}>
-              Dashboard
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">Users</CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">Settings</CNavLink>
-          </CNavItem> */}
-        {/* </CHeaderNav> */}
-        <CHeaderNav className="ms-auto">
-          {/* <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilBell} size="lg" />
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilList} size="lg" />
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilEnvelopeOpen} size="lg" />
-            </CNavLink>
-          </CNavItem> */}
-        </CHeaderNav>
-        <CHeaderNav>
-          {/* <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li> */}
-          <CDropdown variant="nav-item" placement="bottom-end">
-            {/* <CDropdownToggle caret={false}>
-              {colorMode === 'dark' ? (
-                <CIcon icon={cilMoon} size="lg" />
-              ) : colorMode === 'auto' ? (
-                <CIcon icon={cilContrast} size="lg" />
-              ) : (
-                <CIcon icon={cilSun} size="lg" />
-              )}
-            </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem
-                active={colorMode === 'light'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('light')}
-              >
-                <CIcon className="me-2" icon={cilSun} size="lg" /> Light
-              </CDropdownItem>
-              <CDropdownItem
-                active={colorMode === 'dark'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('dark')}
-              >
-                <CIcon className="me-2" icon={cilMoon} size="lg" /> Dark
-              </CDropdownItem>
-              <CDropdownItem
-                active={colorMode === 'auto'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('auto')}
-              >
-                <CIcon className="me-2" icon={cilContrast} size="lg" /> Auto
-              </CDropdownItem>
-            </CDropdownMenu> */}
-          </CDropdown>
-          {/* <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li> */}
-          {/* <AppHeaderDropdown /> */}
-        </CHeaderNav>
-        <CHeaderNav>
-      {username && (
-        <div style={{ marginLeft: 'auto', paddingRight: '1rem' }}>
-          Welcome, {username}!
-        </div>
-      )}
-    </CHeaderNav>
+            {/* MESSAGE */}
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+              Are you sure you want to logout?
+            </Typography>
+
+          </DialogContent>
+
+          <DialogActions
+            sx={{
+              justifyContent: 'center',
+              pb: 2,
+              gap: 1
+            }}
+          >
+            {/* NO BUTTON */}
+            <Button
+              onClick={() => setOpenDialog(false)}
+              variant="outlined"
+              sx={{
+                textTransform: 'none',
+                borderRadius: 2,
+                px: 3
+              }}
+            >
+              Cancel
+            </Button>
+
+            {/* YES BUTTON */}
+            <Button
+              onClick={handleLogout}
+              variant="contained"
+              color="error"
+              sx={{
+                textTransform: 'none',
+                borderRadius: 2,
+                px: 3,
+                boxShadow: 'none',
+                '&:hover': {
+                  boxShadow: '0px 4px 10px rgba(0,0,0,0.2)'
+                }
+              }}
+            >
+              Logout
+            </Button>
+          </DialogActions>
+        </Dialog>
       </CContainer>
-      {/* <CContainer className="px-4" fluid> */}
-        {/* <AppBreadcrumb /> */}
-      {/* </CContainer> */}
+
+      <ChangePassword
+        visible={openChangePassword}
+        setVisible={setOpenChangePassword} />
+
     </CHeader>
+
+
+
   )
 }
 
 export default AppHeader
-// import { useEffect, useRef, useState } from 'react';
-// import { AppBar, Toolbar, Button, Box, Menu, MenuItem, useMediaQuery, useTheme } from '@mui/material';
-// import { ChevronRight, ExpandMore } from '@mui/icons-material';
-// import { useDispatch, useSelector } from 'react-redux';
-// const AppHeader = () => {
-//   const headerRef = useRef();
-//   const dispatch = useDispatch();
-//   const sidebarShow = useSelector((state) => state.sidebarShow);
 
-//   const [anchorElFrontOffice, setAnchorElFrontOffice] = useState(null);
-//   const [anchorElMasterSettings, setAnchorElMasterSettings] = useState(null);
-//   const [anchorElTechnical, setAnchorElTechnical] = useState(null);
-
-//   const handleClickFrontOffice = (event) => setAnchorElFrontOffice(event.currentTarget);
-//   const handleClickMasterSettings = (event) => setAnchorElMasterSettings(event.currentTarget);
-//   const handleClickTechnical = (event) => setAnchorElTechnical(event.currentTarget);
-//   const handleClose = () => {
-//     setAnchorElFrontOffice(null);
-//     setAnchorElMasterSettings(null);
-//     setAnchorElTechnical(null);
-//   };
-
-//   const theme = useTheme();
-//   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-//   useEffect(() => {
-//     document.addEventListener('scroll', () => {
-//       headerRef.current &&
-//         headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0);
-//     });
-//   }, []);
-
-//   return (
-//     <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
-//       <CContainer className="border-bottom px-4" fluid>
-//         <CHeaderToggler
-//           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
-//           style={{ marginInlineStart: '-14px' }}
-//         >
-//           <CIcon icon={cilMenu} size="lg" />
-//         </CHeaderToggler>
-
-//         {/* Material-UI Navbar Integration */}
-//         <AppBar position="static">
-//           <Toolbar sx={{ backgroundColor: '#bd2937' }}>
-//             <Box
-//               sx={{
-//                 display: 'flex',
-//                 justifyContent: isMobile ? 'center' : 'flex-start',
-//                 width: 'auto',
-//                 gap: 3,
-//                 fontSize: '0.75rem',
-//                 flexDirection: isMobile ? 'column' : 'row',
-//               }}
-//             >
-//               <Button color="inherit" onClick={handleClickFrontOffice} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
-//                 Frontoffice <ExpandMore sx={{ width: '20px' }} />
-//               </Button>
-//               <Button color="inherit" onClick={handleClickMasterSettings} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
-//                 Mastersettings <ExpandMore sx={{ width: '20px' }} />
-//               </Button>
-//               <Button color="inherit" onClick={handleClickTechnical} sx={{ textTransform: 'none', fontSize: '0.75rem' }}>
-//                 Technical <ExpandMore sx={{ width: '20px' }} />
-//               </Button>
-//             </Box>
-//           </Toolbar>
-//         </AppBar>
-
-//         {/* FrontOffice Menu */}
-//         <Menu anchorEl={anchorElFrontOffice} open={Boolean(anchorElFrontOffice)} onClose={handleClose}>
-//           <MenuItem onClick={handleClose} sx={{ fontSize: '0.75rem' }}>Patient Registration</MenuItem>
-//           <MenuItem onClick={handleClose} sx={{ fontSize: '0.75rem' }}>Edit Demographic Details</MenuItem>
-//           {/* Add more menu items as needed */}
-//         </Menu>
-
-//         {/* Additional dropdowns for MasterSettings and Technical */}
-//         <Menu anchorEl={anchorElMasterSettings} open={Boolean(anchorElMasterSettings)} onClose={handleClose}>
-//           <MenuItem onClick={handleClose} sx={{ fontSize: '0.75rem' }}>Settings Option 1</MenuItem>
-//         </Menu>
-//         <Menu anchorEl={anchorElTechnical} open={Boolean(anchorElTechnical)} onClose={handleClose}>
-//           <MenuItem onClick={handleClose} sx={{ fontSize: '0.75rem' }}>Technical Option 1</MenuItem>
-//         </Menu>
-
-//       </CContainer>
-//     </CHeader>
-//   );
-// };
-
-// export default AppHeader;
