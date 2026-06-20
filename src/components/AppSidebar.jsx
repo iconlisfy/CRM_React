@@ -37,7 +37,7 @@ import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import LookUpEntry from '../views/base/Lookup Entry/LookUpEntry';
 import { encryptAES } from '../utils/Encryption';
 import axiosInstance from '../axios';
-
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 const AppSidebar = () => {
 
   const { deptid, name, Image, dept, role, empId } = getReduxState()
@@ -291,7 +291,9 @@ const AppSidebar = () => {
           {renderItem('/CurrentWrkList', SourceIcon, 'My Work List')}
           {(role === "Administrator" || role === "HOD" || role === "Supervisor") &&
             renderItem('/CustomerDetails', GroupsIcon, 'Customer Details')}
-
+          {(role === "Administrator" || role === "HOD") &&
+            renderItem('/WorkStatus', WorkHistoryIcon, 'Work Status')
+          }
           {renderItem('/TransferDetails', MultipleStopIcon, 'Transfer Details')}
           {renderItem('/TagList', LocalOfferIcon, 'Tag List')}
           {renderItem('/SortCusList', GradingIcon, 'Total Work List')}
@@ -300,43 +302,41 @@ const AppSidebar = () => {
           {(role === "Administrator" || role === "HOD") &&
             renderItem('/CreateNewUser', PersonAddIcon, 'Create Staff')
           }
+
           {(role === "Administrator" || role === "HOD") &&
-            renderItem('/WorkStatus', WorkHistoryIcon, 'Work Status')
-          }
-
-          <Box
-            onClick={() => setVisible(true)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.8,
-              padding: '10px 14px',
-              marginBottom: '6px',
-              cursor: 'pointer',
-
-              '&:hover': {
-                backgroundColor: '#fde2e5',
-              },
-            }}
-          >
-            <LockIcon
+            <Box
+              onClick={() => setVisible(true)}
               sx={{
-                fontSize: 24,
-                color: '#DC3545',
-              }}
-            />
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.8,
+                padding: '10px 14px',
+                marginBottom: '6px',
+                cursor: 'pointer',
 
-            <Typography
-              sx={{
-                fontSize: 15,
-                fontWeight: 500,
-                color: '#b02a37',
+                '&:hover': {
+                  backgroundColor: '#fde2e5',
+                },
               }}
             >
-              Lookup Entry
-            </Typography>
-          </Box>
+              <ManageSearchIcon 
+                sx={{
+                  fontSize: 24,
+                  color: '#DC3545',
+                }}
+              />
 
+              <Typography
+                sx={{
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: '#b02a37',
+                }}
+              >
+                Lookup Entry
+              </Typography>
+            </Box>
+          }
           {/* LOGOUT */}
           <Box
             onClick={() => setOpenDialog(true)}

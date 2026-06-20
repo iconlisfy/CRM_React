@@ -594,9 +594,6 @@ function CreateNewUser() {
         }
     };
 
-
-
-
     return (
         <>
             <Box
@@ -724,8 +721,6 @@ function CreateNewUser() {
                 </Grid>
 
             </Box>
-
-
 
             <Dialog open={openDialog}
                 onClose={handleClose}

@@ -84,6 +84,8 @@ function CustomerDetails() {
     const [allStaff, setAllStaff] = useState([]);
     const [selectedStaff, setSelectedStaff] = useState('');
 
+    const [selectedInstalledBY, setSelectedInstallBy] = useState('');
+
     const [allCustType, setCustType] = useState([]);
     const [selectedCustType, setSelectedCustType] = useState('');
 
@@ -124,6 +126,8 @@ function CustomerDetails() {
     const [noOfComputers, setNoOfComputers] = useState('');
     const [serverName, setServerName] = useState('')
     const [installationType, setInstallationType] = useState('')
+
+    const [email, setEmail] = useState('')
 
     const [newContact, setNewContact] = useState({
         MC_Name: '',
@@ -387,10 +391,11 @@ function CustomerDetails() {
                 (item) => Number(item.mstr_key) === Number(data?.AhMst_CustType)
             );
 
-
             const matchedStaff = allStaff.find(
                 (item) => Number(item.ahmst_key) === Number(data?.RemarksBy)
             );
+
+
 
             setEditFlag(true)
             setAnalyzerData(res.data?.Analyzerlist || []);
@@ -419,6 +424,8 @@ function CustomerDetails() {
             setServerName(data?.Customer_ServerName || '')
             setNoOfComputers(data?.Customer_NoComputers || '')
             setInstallationType(data?.Customer_InstallType || '')
+            setSelectedInstallBy(data?.AhMst_InstBy || '')
+            setEmail(data?.AhMst_Email || '')
             setRemarksDateTime(
                 data?.RemarksDate
                     ? new Date(data.RemarksDate)
@@ -526,6 +533,7 @@ function CustomerDetails() {
         setAddress('');
         setRemarks('');
         setSelectedCustType('')
+        setEmail('')
 
         // location
         setSelectedCountry('');
@@ -542,6 +550,7 @@ function CustomerDetails() {
         setInstallDate(new Date())
 
         setSelectedStaff('')
+        setSelectedInstallBy('')
 
         // sponsor
         setSponsoredBy('');
@@ -961,7 +970,7 @@ function CustomerDetails() {
                 AhMst_mobile: '',
                 AhMst_ContPrsn: pointOfCntct,
                 AhMst_ContPrsnMob: pointOfCntctNo,
-                AhMst_Email: '',
+                AhMst_Email: email || '',
                 AhMst_Shortcode: '',
                 AhMst_CustType: selectedCustType,
 
@@ -986,7 +995,7 @@ function CustomerDetails() {
                 Customer_SponsorIsActive: '',
                 Customer_SponsorIsVerified: '',
                 Customer_SponsorIsHeadOffice: '',
-                AhMst_InstBy: '',
+                AhMst_InstBy: selectedInstalledBY,
                 AhMst_InstOn: insDate,
                 AhMst_RenwOn: '',
                 AhMst_CurAMCfrm: '',
@@ -1156,12 +1165,56 @@ function CustomerDetails() {
     //     return "NO_AMC";
     // };
 
+    // const getAMCStatus = (row) => {
+
+    //     const today = new Date();
+
+    //     const isActive =
+    //         Number(row?.Prd_AMCIsActive) === true;
+
+    //     const amcFrom = row?.PrdAMCFrom
+    //         ? new Date(row.PrdAMCFrom)
+    //         : row?.anlAMCFrom
+    //             ? new Date(row.anlAMCFrom)
+    //             : null;
+
+    //     const amcTo = row?.PrdAMCTo
+    //         ? new Date(row.PrdAMCTo)
+    //         : row?.anlAMCTo
+    //             ? new Date(row.anlAMCTo)
+    //             : null;
+
+    //     // 1. Date range valid => ACTIVE
+    //     if (
+    //         amcFrom &&
+    //         amcTo &&
+    //         today >= amcFrom &&
+    //         today <= amcTo
+    //     ) {
+    //         return "ACTIVE";
+    //     }
+
+    //     // 2. Date invalid but checkbox active => ACTIVE
+    //     if (isActive) {
+    //         return "ACTIVE";
+    //     }
+
+    //     // 3. Expired
+    //     if (amcTo && today > amcTo) {
+    //         return "EXPIRED";
+    //     }
+
+    //     // 4. No AMC
+    //     return "NO_AMC";
+    // };
+
     const getAMCStatus = (row) => {
 
         const today = new Date();
 
         const isActive =
-            Number(row?.Prd_AMCIsActive) === true;
+            row?.Prd_AMCIsActive === true ||
+            Number(row?.Prd_AMCIsActive) === 1;
 
         const amcFrom = row?.PrdAMCFrom
             ? new Date(row.PrdAMCFrom)
@@ -1175,7 +1228,6 @@ function CustomerDetails() {
                 ? new Date(row.anlAMCTo)
                 : null;
 
-        // 1. Date range valid => ACTIVE
         if (
             amcFrom &&
             amcTo &&
@@ -1185,17 +1237,14 @@ function CustomerDetails() {
             return "ACTIVE";
         }
 
-        // 2. Date invalid but checkbox active => ACTIVE
         if (isActive) {
             return "ACTIVE";
         }
 
-        // 3. Expired
         if (amcTo && today > amcTo) {
             return "EXPIRED";
         }
 
-        // 4. No AMC
         return "NO_AMC";
     };
 
@@ -1209,6 +1258,7 @@ function CustomerDetails() {
             const today = new Date();
 
             const isActive =
+                row?.Prd_AMCIsActive === true ||
                 Number(row?.Prd_AMCIsActive) === 1;
 
             const amcFrom = row?.PrdAMCFrom
@@ -1273,11 +1323,13 @@ function CustomerDetails() {
 
     //     return validAMC || isActive;
     // });
-    const hasActive =
-        amcSummary.activeCount >= amcSummary.inactiveCount;
+    const hasActive = (combinedData || []).some(
+        (row) => getAMCStatus(row) === "ACTIVE"
+    );
 
     const hasWarning =
-        amcSummary.inactiveCount > amcSummary.activeCount;
+        hasData &&
+        !hasActive;
 
     // SHOW WARNING IF EVEN ONE PRODUCT IS EXPIRED / NO AMC
     // const hasWarning =
@@ -1296,14 +1348,36 @@ function CustomerDetails() {
             }));
     }, [combinedData]);
 
+    // const alertProducts = React.useMemo(() => {
+
+    //     return (combinedData || [])
+    //         .filter((row) => {
+    //             const isActive = Number(row?.Prd_AMCIsActive) === true;
+
+    //             // Skip if Active checkbox is checked
+    //             if (isActive) return false;
+
+    //             const status = getAMCStatus(row);
+
+    //             return status === "NO_AMC" || status === "EXPIRED";
+    //         })
+    //         .map((row) => ({
+    //             name: row.Productname || row.AnlzName,
+    //             status: getAMCStatus(row),
+    //             isActive: row.Prd_AMCIsActive
+    //         }));
+    // }, [combinedData]);
 
     const alertProducts = React.useMemo(() => {
 
         return (combinedData || [])
             .filter((row) => {
-                const isActive = Number(row?.Prd_AMCIsActive) === true;
 
-                // Skip if Active checkbox is checked
+                const isActive =
+                    row?.Prd_AMCIsActive === true ||
+                    Number(row?.Prd_AMCIsActive) === true;
+
+                // Skip active products
                 if (isActive) return false;
 
                 const status = getAMCStatus(row);
@@ -1316,6 +1390,7 @@ function CustomerDetails() {
                 isActive: row.Prd_AMCIsActive
             }));
     }, [combinedData]);
+
 
     const showInfoIcon = alertProducts.length > 0;
 
@@ -1387,7 +1462,7 @@ function CustomerDetails() {
                 <Grid item xs={12} lg={12}>
 
                     <Card sx={{
-                        height: { xs: '120px', sm: '70px', lg: "70px" },
+                        height: { xs: '150px', sm: '70px', lg: "70px" },
                     }}>
                         <CardContent>
 
@@ -1852,9 +1927,7 @@ function CustomerDetails() {
                 <Grid item lg={12}>
 
                     <Card sx={{
-
-                        height: { xs: '1320px', sm: '365px', lg: "366px", xl: '364px' },
-
+                        height: { xs: '1420px', sm: '405px', lg: "366px", xl: '364px' },
                     }}>
                         <CardContent>
                             <Grid container spacing={1}>
@@ -1928,6 +2001,26 @@ function CustomerDetails() {
                                         }}
                                     />
                                 </Grid>
+
+
+
+                                <Grid item xs={12} sm={3} md={3} lg={3}>
+                                    <TextField label="Email" type="text" size="small" fullWidth
+                                        value={email || ''}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        sx={{
+                                            fontSize: '1rem',
+                                            height: 40,
+                                            '& input': {
+                                                padding: '8px', fontSize: '0.95rem',
+                                                '&:focus': {
+                                                    backgroundColor: 'var(--focus-bg-color)'
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </Grid>
+
 
                                 <Grid item xs={12} sm={3} md={3} lg={3}>
                                     <TextField label="Customer Relation" type="text" size="small" fullWidth
@@ -2024,7 +2117,9 @@ function CustomerDetails() {
                                 </Grid>
 
 
-                                <Grid item xs={12} sm={1.5} md={1.5} lg={3}>
+
+
+                                <Grid item xs={12} sm={3} md={3} lg={3}>
                                     <TextField label="Customer Type" type="text" size="small" fullWidth
                                         select
                                         value={selectedCustType}
@@ -2054,61 +2149,6 @@ function CustomerDetails() {
                                     </TextField>
                                 </Grid>
 
-                                <Grid item xs={12} sm={4.5} md={4.5} lg={3}>
-
-                                    <Grid container spacing={1}>
-                                        <Grid item xs={12} sm={3.3} md={3.3} lg={3.3}>
-
-                                            <FormControlLabel
-                                                control={<Checkbox size="small"
-                                                    checked={isActive === true}
-                                                    onChange={(e) => setIsActive(e.target.checked)}
-                                                    sx={{
-                                                        color: 'grey',
-                                                        '&.Mui-checked': {
-                                                            color: '#DC3545!important',
-                                                        },
-                                                    }} />}
-                                                label="IsActive" />
-
-                                        </Grid>
-
-                                        <Grid item xs={12} sm={3.3} md={3.3} lg={3.3}>
-
-                                            <FormControlLabel
-                                                control={<Checkbox size="small"
-                                                    checked={verified === true}
-                                                    onChange={(e) => setVerified(e.target.checked)}
-                                                    sx={{
-                                                        color: 'grey',
-                                                        '&.Mui-checked': {
-                                                            color: '#DC3545!important',
-                                                        },
-                                                    }} />}
-                                                label="Verified"
-                                            />
-                                        </Grid>
-
-                                        <Grid item xs={12} sm={3.3} md={3} lg={3.3}>
-
-                                            <FormControlLabel
-                                                control={<Checkbox size="small"
-                                                    checked={isHeadOffice === true}
-                                                    onChange={(e) => setIsHeadOffice(e.target.checked)}
-                                                    sx={{
-                                                        color: 'grey',
-                                                        '&.Mui-checked': {
-                                                            color: '#DC3545!important',
-                                                        },
-                                                    }} />}
-                                                label="IsHeadOffice"
-                                            />
-
-                                        </Grid>
-
-                                    </Grid>
-
-                                </Grid>
 
                                 <Grid item xs={12} sm={3} md={3} lg={3} >
 
@@ -2429,7 +2469,7 @@ function CustomerDetails() {
                                     </Grid>
                                 </Grid>
 
-                                <Grid item xs={12} sm={3} lg={3}>
+                                <Grid item xs={12} sm={4} lg={1.5}>
 
                                     <TextField
                                         label="No.of Computers"
@@ -2461,7 +2501,7 @@ function CustomerDetails() {
                                     </TextField>
                                 </Grid>
 
-                                <Grid item xs={12} sm={3} lg={3}>
+                                <Grid item xs={12} sm={4} lg={1.5}>
 
                                     <TextField
                                         label="Server Name"
@@ -2491,7 +2531,7 @@ function CustomerDetails() {
                                 </Grid>
 
 
-                                <Grid item xs={12} sm={3} lg={3}>
+                                <Grid item xs={12} sm={4} lg={3}>
 
                                     <TextField
                                         label="Installation Type"
@@ -2517,6 +2557,92 @@ function CustomerDetails() {
                                     >
 
                                     </TextField>
+                                </Grid>
+
+                                <Grid item xs={12} sm={4} lg={3}>
+
+                                    <TextField
+                                        label="Installed By"
+                                        size="small"
+                                        
+                                        fullWidth
+                                        value={selectedInstalledBY}
+                                        onChange={(e) => setSelectedInstallBy(e.target.value)}
+                                        sx={{
+                                            fontSize: '1rem',
+                                            height: 40,
+
+                                            '& .MuiSelect-select': {
+                                                padding: '8px',
+                                                fontSize: '0.95rem',
+                                            },
+
+                                            '& .MuiOutlinedInput-root.Mui-focused': {
+                                                backgroundColor: 'var(--focus-bg-color)',
+                                            },
+                                        }}
+                                    >
+
+
+                                    </TextField>
+                                </Grid>
+
+
+
+                                <Grid item xs={12} sm={4.5} md={6} lg={3}>
+
+                                    <Grid container spacing={1}>
+                                        <Grid item xs={12} sm={3.3} md={3.3} lg={3.3}>
+
+                                            <FormControlLabel
+                                                control={<Checkbox size="small"
+                                                    checked={isActive === true}
+                                                    onChange={(e) => setIsActive(e.target.checked)}
+                                                    sx={{
+                                                        color: 'grey',
+                                                        '&.Mui-checked': {
+                                                            color: '#DC3545!important',
+                                                        },
+                                                    }} />}
+                                                label="IsActive" />
+
+                                        </Grid>
+
+                                        <Grid item xs={12} sm={3.3} md={3.3} lg={3.3}>
+
+                                            <FormControlLabel
+                                                control={<Checkbox size="small"
+                                                    checked={verified === true}
+                                                    onChange={(e) => setVerified(e.target.checked)}
+                                                    sx={{
+                                                        color: 'grey',
+                                                        '&.Mui-checked': {
+                                                            color: '#DC3545!important',
+                                                        },
+                                                    }} />}
+                                                label="Verified"
+                                            />
+                                        </Grid>
+
+                                        <Grid item xs={12} sm={3.3} md={3} lg={3.3}>
+
+                                            <FormControlLabel
+                                                control={<Checkbox size="small"
+                                                    checked={isHeadOffice === true}
+                                                    onChange={(e) => setIsHeadOffice(e.target.checked)}
+                                                    sx={{
+                                                        color: 'grey',
+                                                        '&.Mui-checked': {
+                                                            color: '#DC3545!important',
+                                                        },
+                                                    }} />}
+                                                label="IsHeadOffice"
+                                            />
+
+                                        </Grid>
+
+                                    </Grid>
+
                                 </Grid>
 
 
@@ -3603,10 +3729,6 @@ function CustomerDetails() {
                                                 }}
                                             />
                                         </Grid>
-
-
-
-
 
 
                                         <Grid item xs={12} sm={12} md={12} lg={12} style={{ display: 'flex', justifyContent: 'flex-end' }}

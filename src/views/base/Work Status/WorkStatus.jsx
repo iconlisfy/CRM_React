@@ -9,6 +9,8 @@ import axiosInstance from '../../../axios';
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import Collapse from "@mui/material/Collapse";
+import { useNavigate } from 'react-router-dom';
+import NewTicket from '../Ticket List/NewTicket';
 
 function WorkStatus() {
 
@@ -38,6 +40,10 @@ function WorkStatus() {
 
     const [status, setStatus] = useState("All");
     const [selectedStatus, setSelectedStatus] = useState("All"); // applied filter
+
+    const [openTicketModal, setOpenTicketModal] = useState(false);
+    const [selectedRow, setSelectedRow] = useState(null);
+
 
     // Fetch Staff
     const fetchStaff = async () => {
@@ -148,7 +154,7 @@ function WorkStatus() {
 
     }, [listDept, filteredStaff, allStaff]);
 
-    
+
 
     // fetch data
     const fetchData = async () => {
@@ -183,6 +189,7 @@ function WorkStatus() {
     useEffect(() => {
         fetchStaff()
         fetchDepartment()
+        fetchData()
     }, [])
 
 
@@ -194,6 +201,18 @@ function WorkStatus() {
                     item?.TicketStatus?.toLowerCase() ===
                     selectedStatus.toLowerCase()
             );
+
+    const navigate = useNavigate();
+
+    const handleOpenTicket = (row) => {
+        navigate("/TicketLists", {
+            state: {
+                openWrkStatusEdit: true,
+                ticketData: row,
+                fromWrkStatus: true
+            }
+        });
+    };
 
     return (
         <>
@@ -225,7 +244,16 @@ function WorkStatus() {
 
                     <Grid item xs={12} >
 
-                        <Card>
+                        <Card sx={{
+                            // border:'1px solid',
+                            height: {
+                                xs: 'calc(100vh - -350px)',
+                                sm: 'calc(100vh - -80px)',
+                                md: 'calc(100vh - 10px)',
+                                lg: 'calc(100vh - 10px)',
+                                xl: 'calc(100vh - -58px)'
+                            },
+                        }}>
                             <CardContent>
                                 <Grid container spacing={1}>
 
@@ -436,11 +464,11 @@ function WorkStatus() {
                                             component={Paper}
                                             sx={{
                                                 height: {
-                                                    xs: 'calc(100vh - 150px)',
-                                                    sm: 'calc(100vh - 190px)',
-                                                    md: 'calc(100vh - 150px)',
+                                                    xs: 'calc(100vh - 50px)',
+                                                    sm: 'calc(100vh - 120px)',
+                                                    md: 'calc(100vh - 190px)',
                                                     lg: 'calc(100vh - 140px)',
-                                                    xl: 'calc(100vh - 158px)'
+                                                    xl: 'calc(100vh - 88px)'
                                                 },
                                                 overflowX: 'auto',
                                                 overflowY: 'auto', // shows scrollbar only if needed
@@ -465,39 +493,75 @@ function WorkStatus() {
 
                                                     <TableRow sx={{ height: '32px' }}>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '3%', fontWeight: 'bold' }}>SlNo</TableCell>
-                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '6%', fontWeight: 'bold' }}>Employee</TableCell>
-                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '9%', fontWeight: 'bold' }}>Last UpdatedOn</TableCell>
+
+                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '8%', fontWeight: 'bold' }}>Employee</TableCell>
+                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '9%', fontWeight: 'bold' }}>Last Updated on</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '5%', fontWeight: 'bold' }}>Ticket#</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '12%', fontWeight: 'bold' }}>Customer</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '10%', fontWeight: 'bold' }}>Description</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}>Status</TableCell>
-                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '6%', fontWeight: 'bold' }}>Employee</TableCell>
+                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}>Tat</TableCell>
+
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '4%', fontWeight: 'bold' }}>Sub Works</TableCell>
 
                                                     </TableRow>
                                                 </TableHead>
                                                 <TableBody>
                                                     {filteredData?.length > 0 ? (
-                                                        filteredData.map((item, index) => (
+                                                        filteredData.map((row, index) => (
                                                             <React.Fragment key={index}>
 
                                                                 <TableRow>
-                                                                    <TableCell>{item.Row}</TableCell>
-                                                                    <TableCell>{item.Employee}</TableCell>
-                                                                    <TableCell>{item.UpdateDate}</TableCell>
-                                                                    <TableCell>{item.TicketNo}</TableCell>
-                                                                    <TableCell>{item.CustomerName}</TableCell>
-                                                                    <TableCell>{item.Description}</TableCell>
-                                                                    <TableCell>{item.TicketStatus}</TableCell>
-                                                                    <TableCell>{item.Employee}</TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{index + 1}</TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>
+                                                                        <Box display="flex" alignItems="center" gap={1}>
+                                                                            {row.TicketStatus === "Doing" && (
+                                                                                <Box
+                                                                                    sx={{
+                                                                                        width: 10,
+                                                                                        height: 10,
+                                                                                        borderRadius: "50%",
+                                                                                        backgroundColor: "#28a745",
+                                                                                        boxShadow: "0 0 8px #28a745",
+                                                                                        animation: "pulse 1.5s infinite"
+                                                                                    }}
+                                                                                />
+                                                                            )}
 
-                                                                    <TableCell align="center">
+                                                                            <Box
+                                                                                sx={{
+                                                                                    ml: row.TicketStatus === "Doing" ? 0 : 2
+                                                                                }}
+                                                                            >
+                                                                                {row.StartedBy}
+                                                                            </Box>
+                                                                        </Box>
+                                                                    </TableCell>
+                                                                    {/* <TableCell sx={{ fontSize: '0.95rem' }}>{item.Employee}</TableCell> */}
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{row.UpdateDate}</TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>
+                                                                        <span
+                                                                            onClick={() => handleOpenTicket(row)}
+                                                                            style={{
+                                                                                textDecoration: "none",
+                                                                                color: "#1976d2",
+                                                                                fontWeight: 500,
+                                                                                cursor: "pointer"
+                                                                            }}
+                                                                        >{row.TicketNo}</span></TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{row.CustomerName}</TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{row.Description}</TableCell>
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{row.Tat}</TableCell>
+
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{row.TicketStatus}</TableCell>
+
+                                                                    <TableCell align="center" >
                                                                         <Button
                                                                             size="small"
                                                                             variant="outlined"
-                                                                            onClick={() => handleToggleRow(item.TicketNo)}
+                                                                            onClick={() => handleToggleRow(row.TicketNo)}
                                                                             endIcon={
-                                                                                openRows[item.TicketNo]
+                                                                                openRows[row.TicketNo]
                                                                                     ? <KeyboardArrowUpIcon />
                                                                                     : <KeyboardArrowDownIcon />
                                                                             }
@@ -513,28 +577,27 @@ function WorkStatus() {
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            {item.SubTasks?.length || 0}
+                                                                            {row.SubTasks?.length || 0}
                                                                         </Button>
                                                                     </TableCell>
                                                                 </TableRow>
-
                                                                 <TableRow>
                                                                     <TableCell
-                                                                        colSpan={9}
+                                                                        colSpan={8}
                                                                         sx={{
                                                                             p: 0,
-                                                                            borderBottom: openRows[item.TicketNo]
+                                                                            borderBottom: openRows[row.TicketNo]
                                                                                 ? "1px solid #e0e0e0"
                                                                                 : "none"
                                                                         }}
                                                                     >
                                                                         <Collapse
-                                                                            in={openRows[item.TicketNo]}
+                                                                            in={openRows[row.TicketNo]}
                                                                             timeout="auto"
                                                                             unmountOnExit
                                                                         >
                                                                             <Box sx={{ p: 2, bgcolor: "#fafafa" }}>
-                                                                                {item.SubTasks?.map((task, subIndex) => (
+                                                                                {row.SubTasks?.map((task, subIndex) => (
                                                                                     <Box
                                                                                         key={subIndex}
                                                                                         sx={{
@@ -582,7 +645,7 @@ function WorkStatus() {
                                                         ))
                                                     ) : (
                                                         <TableRow>
-                                                            <TableCell colSpan={9} align="center">
+                                                            <TableCell colSpan={8} align="center">
                                                                 No Data Available
                                                             </TableCell>
                                                         </TableRow>
@@ -609,6 +672,13 @@ function WorkStatus() {
                 </Grid>
 
             </Box>
+
+
+            <NewTicket
+                visible={openTicketModal}
+                setVisible={setOpenTicketModal}
+                selectedRow={selectedRow} />
+
         </>
     )
 }

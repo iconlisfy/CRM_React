@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import axiosInstance from '../../../axios';
 import getReduxState from '../../../ReduxState';
+import { Bounce, ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function ServicesandSolutions() {
 
@@ -20,6 +22,8 @@ function ServicesandSolutions() {
 
     const [errorDescription, setErrorrDescription] = useState('')
     const [errrorTableData, setErrorTableData] = useState([]);
+
+    const [focusField, setFocusField] = useState("");
 
     const [openImage, setOpenImage] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
@@ -304,19 +308,24 @@ function ServicesandSolutions() {
                 ServSolDet_SolDesc: item?.solution || ""
             }));
 
-            // CURRENT DATE TIME
-            // const currentDateTime = new Date().toLocaleString("en-GB", {
-            //     day: "2-digit",
-            //     month: "2-digit",
-            //     year: "numeric",
-            //     hour: "2-digit",
-            //     minute: "2-digit",
-            //     second: "2-digit",
-            //     hour12: true
-            // });
 
             // USER INFO
-            const userInfoValue = `${name}`;
+            const getUserInfo = () => {
+                const now = new Date();
+
+                const formatted = now.toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: true
+                });
+
+                return `${name} - ${formatted}`;
+            };
+
 
             // PAYLOAD
             const payload = {
@@ -325,19 +334,12 @@ function ServicesandSolutions() {
                 ...(serviceId ? { SrvSol_Key: serviceId } : {}),
 
                 SrvSol_ServNme: serviceName || selectedService || '',
-
                 SrvSol_Des: serviceDescription,
-
                 SrvSol_RptTmeDays: Number(reportTimeDays) || 0,
-
                 SrvSol_RptDay: reportDay,
-
                 SrvSol_NotActive: notActive ? 1 : 0,
-
-                SrvSol_UserInfo: userInfoValue,
-
+                SrvSol_UserInfo: getUserInfo(),
                 SolutionData: formattedSolutions,
-
                 ErrorimgData: formattedImages
             };
 
@@ -353,18 +355,22 @@ function ServicesandSolutions() {
 
             if (response.data?.status) {
 
-                alert("Saved Successfully");
+                if (serviceId) {
+                    toast.success("Updated Successfully");
+                } else {
+                    toast.success("Saved Successfully");
+                }
 
                 fetchServices();
                 fetchLatestServiceId();
-                handleReset()
+                handleReset();
             }
 
         } catch (error) {
 
             console.log("save error", error);
 
-            alert("Save Failed");
+            toast.error("Save Failed");
         }
     };
 
@@ -475,9 +481,7 @@ function ServicesandSolutions() {
                                                     const updatedDate = data?.SrvSol_Date || data?.SrvSol_UpdDate || "";
 
                                                     setUserInfo(
-                                                        userName && updatedDate
-                                                            ? `${userName} - ${formatDateTime(updatedDate)}`
-                                                            : userName || ""
+                                                        userName
                                                     );
 
                                                     // SOLUTIONS
@@ -1302,6 +1306,8 @@ function ServicesandSolutions() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <ToastContainer autoClose={1000} hideProgressBar={true} position='top-center' theme='colored' transition={Bounce} />
 
 
         </>

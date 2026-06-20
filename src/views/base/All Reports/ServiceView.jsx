@@ -52,12 +52,13 @@ function ServiceView() {
     const [openCompleteDialog, setOpenCompleteDialog] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
 
-
     const [openDialog, setOpenDialog] = useState(false);
     const [dialogMessage, setDialogMessage] = useState('');
 
     const [openCreateTicketDialog, setOpenCreateTicketDialog] = useState(false);
     const [selectedCreateRow, setSelectedCreatedRow] = useState(null);
+
+    const [paymentNotRequired, setPaymentNotRequired] = useState(false);
 
     const handleClose = () => {
         setOpenDialog(false);
@@ -421,7 +422,8 @@ function ServiceView() {
         try {
             const requestData = {
                 ticketno: row?.TicketNo,
-                IsPayableServComplt: true,
+                IsPayableServComplt: !paymentNotRequired,
+                PayableNotReq: paymentNotRequired,
                 logReason: "Completed Payment",
                 logDesc: `Completed payment for ticket ${row?.TicketNo}`,
                 logForm: "Service View",
@@ -455,6 +457,7 @@ function ServiceView() {
     const handleCloseCompleteDialog = () => {
         setOpenCompleteDialog(false);
         setSelectedRow(null);
+        setPaymentNotRequired(false)
     };
 
     const handleConfirmComplete = async () => {
@@ -573,7 +576,7 @@ function ServiceView() {
         handleCloseCreateTicketDialog();
     };
 
-    console.log("selectedRow",selectedRow)
+    console.log("selectedRow", selectedRow)
 
     return (
         <div>
@@ -893,6 +896,7 @@ function ServiceView() {
                                 <MenuItem value="All">--All--</MenuItem>
                                 <MenuItem value="Paid">Paid</MenuItem>
                                 <MenuItem value="NotPaid">Payable</MenuItem>
+                                <MenuItem value="PaymentNotRequired">Payment Not Required</MenuItem>
                             </TextField>
                         </Grid>
 
@@ -1209,7 +1213,7 @@ function ServiceView() {
 
                                         <TableRow sx={{ height: '32px' }}>
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '2%', fontWeight: 'bold' }}>SlNo</TableCell>
-                                            <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '4%', fontWeight: 'bold' }}>Ticket#</TableCell>
+                                            <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '5%', fontWeight: 'bold' }}>Ticket#</TableCell>
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '6%', fontWeight: 'bold' }}>DateTime</TableCell>
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '6%', fontWeight: 'bold' }}>Customer</TableCell>
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}>Description</TableCell>
@@ -1371,6 +1375,7 @@ function ServiceView() {
                                                                         row?.Tkt_IsCompleted === true &&
                                                                         row?.Tkt_IsPayableCompleted !== true &&
                                                                         row?.Tkt_IsPaybleServ === true &&
+                                                                        row?.Tkt_PayableNotReq !== true &&
                                                                         (
                                                                             <Button
                                                                                 variant="contained"
@@ -1402,14 +1407,12 @@ function ServiceView() {
                                                                     {dept?.toLowerCase() === "accounts" &&
                                                                         row?.Tkt_IsCompleted === true &&
                                                                         row?.Tkt_IsPayableCompleted !== true &&
-                                                                        row?.Tkt_IsPaybleServ === true && (
+                                                                        row?.Tkt_IsPaybleServ === true &&
+                                                                        row?.Tkt_PayableNotReq !== true &&
+
+                                                                        (
                                                                             <Button
                                                                                 onClick={() => {
-                                                                                    if (row?.Tkt_IsCompleted === true) {
-                                                                                        setDialogMessage("The Work is not Completed");
-                                                                                        setOpenDialog(true)
-                                                                                        return;
-                                                                                    }
 
                                                                                     setSelectedRow(row);
                                                                                     setOpenCompleteDialog(true);
@@ -1483,22 +1486,48 @@ function ServiceView() {
                     Are you sure you want to complete this service?
                 </DialogContent>
 
-                <DialogActions sx={{ mt: -1 }}>
-                    <Button
-                        onClick={handleCloseCompleteDialog}
-                        sx={{ textTransform: "none" }}
-                    >
-                        No
-                    </Button>
+                <DialogActions
+                    sx={{
+                        justifyContent: "space-between",
+                        px: 3,
+                    }}
+                ><FormControlLabel
+                        control={
+                            <Checkbox
+                                size="small"
+                                checked={paymentNotRequired}
+                                onChange={(e) => setPaymentNotRequired(e.target.checked)}
+                                sx={{
+                                    transform: "scale(0.8)",
+                                    p: 0.5,
+                                }}
+                            />
+                        }
+                        label="Payment Not Required"
+                        slotProps={{
+                            typography: {
+                                fontSize: "0.9rem",
+                            },
+                        }}
+                    />
+                    <Box>
+                        <Button
+                            onClick={handleCloseCompleteDialog}
+                            sx={{ textTransform: "none", mr: 1 }}
+                        >
+                            No
+                        </Button>
 
-                    <Button
-                        onClick={handleConfirmComplete}
-                        color="error"
-                        variant="contained"
-                        sx={{ textTransform: "none" }}
-                    >
-                        Yes
-                    </Button>
+                        <Button
+                            onClick={handleConfirmComplete}
+                            color="error"
+                            variant="contained"
+                            // disabled={!confirmComplete}
+                            sx={{ textTransform: "none" }}
+                        >
+                            Yes
+                        </Button>
+                    </Box>
                 </DialogActions>
             </Dialog>
 

@@ -285,7 +285,7 @@ function TicketList() {
     const fetchWork = async () => {
         try {
             const fetchWorkResponse = await axiosInstance.get(`servicesolutions`)
-            console.log('response', fetchWorkResponse);
+            //    console.log('response', fetchWorkResponse);
             if (fetchWorkResponse.data && fetchWorkResponse.data.data) {
                 setWorks(fetchWorkResponse.data.data);
             }
@@ -293,7 +293,7 @@ function TicketList() {
             console.error('Error fetching', err)
         }
     }
-    console.log('work', works);
+
 
     // Date Time
     useEffect(() => {
@@ -561,6 +561,9 @@ function TicketList() {
         if (location.state?.fromTotalWrkList) {
             navigate("/SortCusList");
         }
+        if (location.state?.fromWrkStatus) {
+            navigate("/WorkStatus");
+        }
     };
 
     // Reset Table(New Ticket)
@@ -634,7 +637,7 @@ function TicketList() {
         const currentItem =
             editingTicket;
 
-        console.log("currentItem", currentItem)
+        //     console.log("currentItem", currentItem)
 
         // if trying to close
         if (Number(status) === 3) {
@@ -824,6 +827,20 @@ function TicketList() {
     //     })
     // };
 
+
+    const now = new Date();
+
+    const formatted = now.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+    });
+
+
     const handleSaveTicket = () => {
         const isEdit = !!editingTicket;
 
@@ -834,6 +851,13 @@ function TicketList() {
         }
 
         withLock(async () => {
+
+            if (!description) {
+                setDialogMessage("Please Enter Description")
+                setOpenDialog(true)
+                setFocusField("Description")
+                return;
+            }
 
             if (rows.length === 0) {
                 setDialogMessage("Please Add Atleast One Work Item");
@@ -871,6 +895,7 @@ function TicketList() {
                 TicketPriority: finalPriority || 'High',
                 IsPayableServ: isPayableService,
                 IsPayableServNote: payableNote,
+                UpdateDate: formatted,
 
                 Items: rows.map(r => ({
                     TktItm_Key: r.TktItm_Key || '',
@@ -892,7 +917,7 @@ function TicketList() {
                     ? `Updated Ticket Details: Ticket No: ${ticketNo}`
                     : `Created Ticket Details: New Ticket No: ${ticketNo}`,
 
-                logReason: logReason || `Ticket Updated`,
+                logReason: logReason || `Ticket Created`,
                 logForm: "Ticket List",
                 logUserId: empId
             };
@@ -1017,7 +1042,8 @@ function TicketList() {
                 state?.openReportsEdit ||
                 state?.opentransEdit ||
                 state?.openTagEdit ||
-                state?.openTotalWrkList
+                state?.openTotalWrkList ||
+                state?.openWrkStatusEdit
             )
         ) {
             setVisible(true);
@@ -1093,10 +1119,10 @@ function TicketList() {
         try {
 
             const apiurl = `TicketListAPI?userGroup=${role}&deptId=${finalDeptId}`
-            console.log("apiurl", apiurl)
+            //  console.log("apiurl", apiurl)
 
             const res = await axiosInstance.get(apiurl)
-            console.log("res", res)
+            // console.log("res", res)
 
             if (res.data?.TktList) {
 
@@ -1350,11 +1376,23 @@ function TicketList() {
                 Ticket List
             </Typography>
 
-            <Card sx={{ marginTop: "1px" }}>
+            <Card
+
+                sx={{
+                    marginTop: "1px",
+                    // border: '1px solid',
+                    height: {
+                        xs: 'calc(100vh - -200px)',
+                        sm: 'calc(100vh - 0px)',
+                        md: 'calc(100vh - 0px)',
+                        lg: 'calc(100vh - 5px)',
+                        xl: 'calc(100vh - 8px)'
+                    },
+                }}>
                 <CardContent>
                     <Grid container spacing={1}>
 
-                        <Grid item xs={12} sm={6} md={2} lg={3}>
+                        <Grid item xs={12} sm={4} md={4} lg={2.5}>
 
                             <TextField
                                 select
@@ -1392,7 +1430,7 @@ function TicketList() {
 
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={2} lg={2} >
+                        <Grid item xs={12} sm={4} md={4} lg={2} >
 
                             <TextField
                                 select
@@ -1462,7 +1500,7 @@ function TicketList() {
                                 }}
                             /> */}
 
-                        <Grid item xs={12} sm={6} md={2.5} lg={3} xl={3}>
+                        <Grid item xs={12} sm={4} md={4} lg={2.5} xl={3}>
                             {listSearchBy === "Staff" &&
                                 (role === "Administrator" || role === "HOD") ? (
                                 <TextField
@@ -1539,7 +1577,7 @@ function TicketList() {
                             )}
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={2.5} lg={2.5} xl={1.5} >
+                        <Grid item xs={12} sm={4} md={4} lg={2.5} xl={2} >
 
                             <TextField
                                 label="Priority"
@@ -1567,7 +1605,7 @@ function TicketList() {
                             </TextField>
                         </Grid>
 
-                        <Grid item xs={12} sm={12} md={1} lg={1} sx={{ mt: { md: "8px" }, ml: { md: "20px" }, }}>
+                        <Grid item xs={12} sm={4} md={4} lg={1} sx={{ mt: { md: "8px" }, ml: { md: "20px" }, }}>
 
                             <Typography
                                 sx={{
@@ -1598,6 +1636,33 @@ function TicketList() {
                             </Typography>
                         </Grid>
 
+                        <Grid item xs={12} sm={4} md={3.7} lg={1.1} style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
+                            <Button
+                                fullWidth
+                                sx={{
+                                    textTransform: 'none',
+                                    marginRight: 3,
+                                    height: '32px',
+                                    width: {
+                                        xs: '100%',
+                                        sm: "100px"
+                                    },
+                                    border: '#DC3545',
+                                    color: '#f5f7fa',
+                                    backgroundColor: '#DC3545',
+                                    '&:hover': {
+                                        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+                                    },
+                                }}
+                                variant="contained"
+                                onClick={() => setVisible(true)}
+                            >
+                                New
+                            </Button>
+
+                        </Grid>
+
+
                         <Grid item xs={12} sx={{ marginBottom: { xs: '40px', sm: '10px', md: '30px' } }}>
 
                             <TableContainer
@@ -1606,9 +1671,9 @@ function TicketList() {
                                     height: {
                                         xs: 'calc(100vh - 150px)',
                                         sm: 'calc(100vh - 190px)',
-                                        md: 'calc(100vh - 150px)',
-                                        lg: 'calc(100vh - 169px)',
-                                        xl: 'calc(100vh - 158px)'
+                                        md: 'calc(100vh - 170px)',
+                                        lg: 'calc(100vh - 139px)',
+                                        xl: 'calc(100vh - 148px)'
                                     }, overflowX: 'auto',
                                     overflowY: 'auto', // shows scrollbar only if needed
                                     '&::-webkit-scrollbar': {
@@ -1626,7 +1691,7 @@ function TicketList() {
                                     marginTop: 1,
                                 }}
                             >
-                                <Table striped sx={{ minWidth: 800, tableLayout: 'fixed' }}>
+                                <Table striped sx={{ minWidth: 1000, tableLayout: 'fixed' }}>
                                     {/* Table Head */}
                                     <TableHead sx={{ position: 'sticky', zIndex: 1, top: 0, backgroundColor: 'var(--header-bg-color)' }}>
 
@@ -1642,7 +1707,7 @@ function TicketList() {
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '5%', fontWeight: 'bold' }}>CreatedBy</TableCell>
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '2%', fontWeight: 'bold' }}></TableCell>
                                             <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '2%', fontWeight: 'bold' }}></TableCell>
-                                            <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}></TableCell>
+                                            <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '6%', fontWeight: 'bold' }}></TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -1824,20 +1889,22 @@ function TicketList() {
                                                         </Box>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Button size="small" sx={{
-                                                            textTransform: 'none',
-                                                            marginRight: 1,
-                                                            width: {
-                                                                xs: '100%',
-                                                                sm: "auto"
-                                                            },
-                                                            border: '#DC3545',
-                                                            color: '#f5f7fa',
-                                                            backgroundColor: '#DC3545',
-                                                            '&:hover': {
-                                                                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-                                                            },
-                                                        }}
+                                                        <Button size="small"
+                                                            fullWidth sx={{
+                                                                textTransform: 'none',
+                                                                marginRight: 1,
+
+                                                                width: {
+                                                                    xs: '100%',
+                                                                    sm: "auto"
+                                                                },
+                                                                border: '#DC3545',
+                                                                color: '#f5f7fa',
+                                                                backgroundColor: '#DC3545',
+                                                                '&:hover': {
+                                                                    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+                                                                },
+                                                            }}
                                                             variant="contained"
                                                             onClick={() => {
                                                                 setPendingWorkRow(row);
@@ -1857,31 +1924,6 @@ function TicketList() {
 
                         </Grid>
 
-                        <Grid item xs={12} sm={12} style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-6px' }}>
-                            <Button
-                                fullWidth
-                                sx={{
-                                    textTransform: 'none',
-                                    marginRight: 3,
-                                    height: '32px',
-                                    width: {
-                                        xs: '100%',
-                                        sm: "100px"
-                                    },
-                                    border: '#DC3545',
-                                    color: '#f5f7fa',
-                                    backgroundColor: '#DC3545',
-                                    '&:hover': {
-                                        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-                                    },
-                                }}
-                                variant="contained"
-                                onClick={() => setVisible(true)}
-                            >
-                                New
-                            </Button>
-
-                        </Grid>
 
                     </Grid>
 
@@ -2332,7 +2374,7 @@ function TicketList() {
                     <Button
                         variant="contained"
                         color="error"
-                           size="small"
+                        size="small"
 
                         onClick={() => {
 

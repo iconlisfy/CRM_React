@@ -41,8 +41,6 @@ function TransferDetails() {
     const [isloading, setIsloading] = useState(false)
 
     const [tabledata, setTabledata] = useState([])
-    console.log('tabledata', tabledata);
-
 
     // Fetch Staff
     const fetchStaff = async () => {
@@ -156,8 +154,8 @@ function TransferDetails() {
 
 
     const fetchdata = async () => {
-        console.log('listDept', listDept)
-        console.log('selectedStaff', selectedStaff)
+        // console.log('listDept', listDept)
+        // console.log('selectedStaff', selectedStaff)
         let depid = listDept === 'All' ? 0 : listDept
         let staffid = selectedStaff === "All" ? 0 : selectedStaff
         setIsloading(true)

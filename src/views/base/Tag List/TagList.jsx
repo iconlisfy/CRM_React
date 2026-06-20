@@ -170,7 +170,7 @@ function TagList() {
                 setGetData(response.data.data)
             }
 
-            console.log("tag list response", response.data);
+      //      console.log("tag list response", response.data);
 
         } catch (error) {
 

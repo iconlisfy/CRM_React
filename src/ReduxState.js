@@ -2,7 +2,7 @@ import store from './Store';
 
 const getReduxState = () => {
   const state = store.getState();
-  console.log("Redux state:", state);
+  // console.log("Redux state:", state);
   return {
     isAuthenticated: state.isAuthenticated,
     token: state.token,

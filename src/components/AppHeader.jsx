@@ -24,6 +24,7 @@ import Badge from '@mui/material/Badge';
 import { useWorkList } from '../Context/WorkListContext'
 import LockIcon from '@mui/icons-material/Lock';
 import ChangePassword from '../views/base/Change Password/ChangePassword'
+
 const AppHeader = () => {
   const encryptionKey = "sblw-3hn8-sqoy19";
   const dispatch = useDispatch();
@@ -100,7 +101,7 @@ const AppHeader = () => {
     setAnchorEl(null); // Close the menu
   };
 
-  
+
   const open = Boolean(anchorEl);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Check if it's mobile view
@@ -169,12 +170,12 @@ const AppHeader = () => {
 
               <Typography
                 sx={{
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
+                  fontSize: '1rem',
+                  // fontWeight: 600,
                   color: 'grey',
                   whiteSpace: 'nowrap'
                 }}>
-                WELCOME TO ICON INFOWARE TECHNOLOGIES
+               Welcome to Icon Infoware Technologies!
               </Typography>
 
 

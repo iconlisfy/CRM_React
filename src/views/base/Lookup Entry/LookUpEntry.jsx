@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react';
 import { Tooltip, Link, TableBody, TableCell, TableRow, TableHead, Table, Paper, TableContainer, FormControlLabel, MenuItem, Checkbox, Button, TextField, Grid, Card, CardContent, Typography, Box } from '@mui/material';
 import closebtn from '../../../assets/images/Saki-NuoveXT-Actions-button-cancel.ico'
@@ -7,6 +7,12 @@ import axiosInstance from '../../../axios';
 import { Bounce, ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import getReduxState from '../../../ReduxState';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+} from "@mui/material";
 
 function LookUpEntry({ visible, setVisible, size = 'lg' }) {
 
@@ -24,6 +30,31 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
 
     const [editFlag, setEditFlag] = useState(false)
 
+    const [openDialog, setOpenDialog] = useState(false);
+    const [dialogMessage, setDialogMessage] = useState('');
+
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const mstNameInputRef = useRef(null)
+
+
+    const [focusField, setFocusField] = useState("");
+
+
+    // Close dialog box and focus field if needed
+    const handleClose = () => {
+        setOpenDialog(false);
+
+        // setTimeout(() => {
+        //     if (dialogMessage === "Please Enter a Master Name") {
+        //         mstNameInputRef.current?.focus();
+        //     }
+
+        //     setDialogMessage("");
+        // }, 100);
+    };
+
+
+
     const fetchAllData = async () => {
         try {
             const fetchResponse = await axiosInstance.get(
@@ -35,10 +66,9 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
 
                 setGetData(data);
 
+                //   setSelectedType(null);
 
-                setSelectedType(null);
-
-                setEditFlag(true)
+                //   setEditFlag(true)
             }
         } catch (error) {
             console.log("Error while fetching data", error);
@@ -52,7 +82,6 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
     ].sort((a, b) =>
         (a.type || "").localeCompare(b.type || "")
     );
-
 
     const filteredData = selectedType
         ? getData.filter(item => item.type === selectedType)
@@ -75,19 +104,16 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
         }
     }, [visible]);
 
-    console.log("selectedrow", selectedRow)
-
     const handleRowDoubleClick = (row) => {
         setSelectedRow(row);
 
         setCode(row.code || "");
         setMstName(row.desc || "");
         setDetails(row.details || "");
-        setValue(row.value || "");
+        setValue(row.value || 0);
 
         setEditFlag(true);
     };
-
 
     const handleNew = () => {
         setSelectedRow(null);
@@ -98,8 +124,6 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
         setValue("");
 
         setEditFlag(false);
-
-
     };
 
     const getChanges = () => {
@@ -127,6 +151,19 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
     };
 
     const handleSave = async () => {
+
+        if (!selectedType) {
+            setDialogMessage("Please Select a Master Type")
+            setFocusField("MasterType")
+            setOpenDialog(true)
+            return
+        }
+
+        if (!mstName) {
+            setDialogMessage("Please Enter a Master Name")
+            setOpenDialog(true)
+            return
+        }
 
         const changeLog = getChanges();
 
@@ -163,7 +200,6 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
 
                 fetchAllData();
                 handleNew()
-                setSelectedType(null); // clears table
             } else {
                 toast.error(saveResponse.data?.Message || "Operation failed");
             }
@@ -173,6 +209,39 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
             toast.error("Error while saving data");
         }
     }
+
+    const handleDelete = async () => {
+
+
+        if (!selectedRow) return;
+
+
+
+        const requestData = {
+            MasterKey: selectedRow.mstr_key,
+            Empid: empId
+        };
+
+        try {
+            const deleteResponse = await axiosInstance.post(
+                `/MastersSaveUpdateAPI/DeleteMaster`,
+                requestData
+            );
+
+            if (deleteResponse.data?.Success) {
+                toast.success("Deleted successfully");
+
+                setOpenDeleteDialog(false);
+                handleNew();
+                fetchAllData();
+            } else {
+                toast.error(deleteResponse.data?.Message || "Delete failed");
+            }
+        } catch (error) {
+            console.log("Error while deleting data", error);
+            toast.error("Error while deleting data");
+        }
+    };
 
     return (
         <>
@@ -464,10 +533,11 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
                                             <TextField
                                                 value={mstName}
                                                 onChange={(e) => setMstName(e.target.value)}
-                                                label="mstName"
+                                                label="Name"
                                                 size="small"
                                                 fullWidth
                                                 variant="outlined"
+                                                inputRef={mstNameInputRef}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root.Mui-focused': {
                                                         backgroundColor: 'var(--focus-bg-color)',
@@ -534,6 +604,22 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
                                                             boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                                                         },
                                                     }}
+                                                    onClick={() => {
+
+
+                                                        if (!selectedType) {
+                                                            setDialogMessage("Please Select a Master Type")
+                                                            setOpenDialog(true)
+                                                            return
+                                                        }
+
+                                                        if (!selectedRow) {
+                                                            setDialogMessage("Please Select a Row");
+                                                            setOpenDialog(true)
+                                                            return;
+                                                        }
+                                                        setOpenDeleteDialog(true);
+                                                    }}
                                                     variant="contained"
                                                 >
                                                     Delete
@@ -596,11 +682,98 @@ function LookUpEntry({ visible, setVisible, size = 'lg' }) {
                         </Grid>
                     </Grid>
 
+                    <ToastContainer autoClose={1000} hideProgressBar={true} position='top-center' theme='colored' transition={Bounce} />
+
                 </CModalBody>
 
             </CModal>
 
-            <ToastContainer autoClose={1000} hideProgressBar={true} position='top-center' theme='colored' transition={Bounce} />
+            <Dialog open={openDialog}
+                onClose={handleClose}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        px: 1,
+                        py: 1,
+                        // minWidth: 300
+                    }
+                }}
+                disableRestoreFocus
+                TransitionProps={{
+                    onExited: () => {
+
+                        setDialogMessage("");
+
+                        if (focusField === "MasterType") {
+                            mstNameInputRef.current?.focus();
+                        }
+
+
+                        setFocusField("");
+                    }
+                }}>
+                <DialogContent sx={{ py: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {/* //   <WarningAmberIcon sx={{ color: '#f59e0b', fontSize: 22 }} /> */}
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}
+                        >                {dialogMessage}
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 1, pb: 1 }}>
+                    <Button
+                        onClick={handleClose}
+                        variant="contained"
+                        size="small"
+                        sx={{
+                            textTransform: 'none',
+                            backgroundColor: '#DC3545',
+                            borderRadius: 1.5,
+                            px: 2,
+                            '&:hover': { backgroundColor: '#DC3545' }
+                        }}
+                    >            OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* --------------------------------------------------- */}
+
+            <Dialog open={openDeleteDialog}
+                onClose={() => setOpenDeleteDialog(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        px: 1,
+                        py: 1,
+                    }
+                }}>
+
+                <DialogContent >
+                    <Typography>
+                        Do You Want To Add This Delete this Values?
+                    </Typography>
+                </DialogContent>
+
+                <DialogActions sx={{ px: 1.5, pb: 1, mt: -2 }}>
+                    <Button onClick={() => setOpenDeleteDialog(false)} sx={{
+                        textTransform: 'none'
+                    }}>
+                        No
+                    </Button>
+                    <Button sx={{
+                        height: '32px',
+                        textTransform: 'none'
+                    }}
+                        onClick={handleDelete}
+                        variant="contained"
+                        color="error"
+                    >
+                        Yes
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
 
         </>
     )

@@ -19,6 +19,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import verified from '../../../assets/images/verified.png'
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, allProducts, setAllProducts,
     selectedProducts, setSelectedProducts, productSearch, setProductSearch, selectedProduct,
@@ -36,7 +37,7 @@ function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, al
     setPendingUpdateIndex, onSave, status, setStatus, selectedRow, handleCloseModal, latestStatus, setLatestStatus,
     userInfo, setUserInfo, WrkTitleInputRef, WrkDetailsInputRef, name, isProductExpired, setSelectedRow,
     editingTicket, supportType, setSupportType, works, formatDateTime, contactedPersonInputRef, payableNote, setPayableNote,
-    isPayableService, setIsPayableService, isVerified, checkAMCExpired, amcInfo,isSaving
+    isPayableService, setIsPayableService, isVerified, checkAMCExpired, amcInfo, isSaving
 }) {
 
     const { modalClass } = useModal();
@@ -228,14 +229,14 @@ function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, al
 
                         <Grid item xs={12} >
 
-                            <Grid container spacing={1} justifyContent="space-between" alignItems="center">
+                            <Grid container spacing={1} >
 
 
                                 <Grid item sm={.1} lg={.1} >
 
                                 </Grid>
 
-                                <Grid item xs={5} sm={6} md={9.3} lg={9.9}>
+                                <Grid item xs={5} sm={5} md={6} lg={7.9}>
                                     <Typography
                                         sx={{
                                             fontSize: "0.95rem",
@@ -260,7 +261,43 @@ function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, al
                                     </Typography>
                                 </Grid>
 
-                                <Grid item xs={5} sm={5.8} md={2.5} lg={2} >
+
+                                <Grid item xs={5} sm={6} md={3} lg={2}>
+                                    {editingTicket?.Tat && (
+                                    <Box
+                                        sx={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: 0.8,
+                                            px: 1.5,
+                                            py: 0.5,
+                                            borderRadius: "20px",
+                                            background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
+                                            border: "1px solid #ffb74d",
+                                            boxShadow: "0 2px 8px rgba(255,152,0,0.15)"
+                                        }}
+                                    >
+                                        <AccessTimeIcon
+                                            sx={{
+                                                fontSize: 18,
+                                                color: "#f57c00"
+                                            }}
+                                        />
+
+                                        <Typography
+                                            sx={{
+                                                fontSize: "0.85rem",
+                                                fontWeight: 700,
+                                                color: "#e65100"
+                                            }}
+                                        >
+                                            TAT: {editingTicket?.Tat || "-"}
+                                        </Typography>
+                                    </Box>
+                                    )}
+                                </Grid>
+
+                                <Grid item xs={5} sm={12} md={2.5} lg={2} >
                                     <Typography
                                         sx={{
                                             fontSize: "0.95rem",
@@ -526,8 +563,8 @@ function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, al
                                                             src={verified}
                                                             alt="verified"
                                                             style={{
-                                                                width: 35,
-                                                                height: 35
+                                                                width: 38,
+                                                                height: 38
                                                             }}
                                                         />
                                                     </Box>

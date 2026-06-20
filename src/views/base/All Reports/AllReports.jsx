@@ -41,6 +41,10 @@ function AllReports() {
     const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]); // from date
     const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);// to date
 
+
+    const [dialogMessage, setDialogMessage] = useState('')
+    const [openDialog, setOpenDialog] = useState(false)
+
     // Date
     const frmDate = fromDate ? format(fromDate, 'yyyy-MM-dd') : null
     const todate = toDate ? format(toDate, 'yyyy-MM-dd') : null
@@ -67,6 +71,11 @@ function AllReports() {
     // Date
     const frmUserLoginDate = fromDate ? format(fromUserLoginDate, 'yyyy-MM-dd') : null
     const toUserLoginate = toDate ? format(toUserLoginDate, 'yyyy-MM-dd') : null
+
+    // Close dialog box and focus field if needed
+    const handleClose = () => {
+        setOpenDialog(false);
+    };
 
     const handleSelectAllChange = (event) => {
         const checked = event.target.checked;
@@ -106,6 +115,13 @@ function AllReports() {
 
     // CustomersList Product Wise Print Function
     const handleCustListPrdWisrPrint = async () => {
+
+        if (checkedItems.length === 0) {
+            setDialogMessage("Please Select any Product");
+            setOpenDialog(true)
+            return;
+        }
+
 
         const checkedItem = checkedItems
 
@@ -492,7 +508,7 @@ function AllReports() {
 
         try {
             setIsLoading(true);
-            const url = `/Login/Print?FromDate=2026-06-16&ToDate=2026-06-16`
+            const url = `/Login/Print?FromDate=${frmUserLoginDate}&ToDate=${toUserLoginDate}`
             const printResponseDate = await axiosInstance.get(url);
             // clg
 
@@ -1972,6 +1988,42 @@ function AllReports() {
                 </DialogActions>
             </Dialog>
 
+            {/* -------------------------------------------------------- */}
+
+            <Dialog open={openDialog}
+                onClose={handleClose}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        px: 1,
+                        py: 1,
+                        // minWidth: 300
+                    }
+                }}>
+                <DialogContent sx={{ py: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {/* //   <WarningAmberIcon sx={{ color: '#f59e0b', fontSize: 22 }} /> */}
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}
+                        >                {dialogMessage}
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 1, pb: 1 }}>
+                    <Button
+                        onClick={handleClose}
+                        variant="contained"
+                        size="small"
+                        sx={{
+                            textTransform: 'none',
+                            backgroundColor: '#DC3545',
+                            borderRadius: 1.5,
+                            px: 2,
+                            '&:hover': { backgroundColor: '#DC3545' }
+                        }}
+                    >            OK
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             {/* -------------------------------------------------------- */}
             {isLoading && (
