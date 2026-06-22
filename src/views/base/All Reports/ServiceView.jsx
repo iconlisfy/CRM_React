@@ -263,9 +263,9 @@ function ServiceView() {
                         ToDate: todate
                     }
                 }
-            );
+            ); 
 
-            console.log("Table Data :", response.data);
+    //        console.log("Table Data :", response.data);
 
             if (response.data && response.data.data) {
                 setGetData(response.data.data)

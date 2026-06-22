@@ -20,6 +20,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import verified from '../../../assets/images/verified.png'
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { parse, isValid } from "date-fns";
 
 function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, allProducts, setAllProducts,
     selectedProducts, setSelectedProducts, productSearch, setProductSearch, selectedProduct,
@@ -160,10 +161,54 @@ function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, al
     };
 
 
+ const getTotalTat = (savedTat, updateDate) => {
+
+    let savedMinutes = 0;
+
+    const match = savedTat?.match(
+        /(\d+)\s*\(H\)\s*(\d+)\s*\(m\)/
+    );
+
+    if (match) {
+        savedMinutes =
+            Number(match[1]) * 60 +
+            Number(match[2]);
+    }
+
+    const startTime = new Date(updateDate);
+
+    if (!updateDate || isNaN(startTime.getTime())) {
+        return savedTat || "0 (H) 0 (m)";
+    }
+
+    const runningMinutes = Math.floor(
+        (Date.now() - startTime.getTime()) /
+        (1000 * 60)
+    );
+
+    const totalMinutes = savedMinutes + runningMinutes;
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours} (H) ${minutes} (m)`;
+};
+
+    const [, setRefresh] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setRefresh(prev => prev + 1);
+        }, 60000);
+
+        return () => clearInterval(timer);
+    }, []);
+
+
+
 
     return (
         <>
-
             <CModal
                 size={size}
                 backdrop='static'
@@ -264,36 +309,38 @@ function NewTicket({ visible, setVisible, size = 'xl', dateTime, setDateTime, al
 
                                 <Grid item xs={5} sm={6} md={3} lg={2}>
                                     {editingTicket?.Tat && (
-                                    <Box
-                                        sx={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: 0.8,
-                                            px: 1.5,
-                                            py: 0.5,
-                                            borderRadius: "20px",
-                                            background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
-                                            border: "1px solid #ffb74d",
-                                            boxShadow: "0 2px 8px rgba(255,152,0,0.15)"
-                                        }}
-                                    >
-                                        <AccessTimeIcon
+                                        <Box
                                             sx={{
-                                                fontSize: 18,
-                                                color: "#f57c00"
-                                            }}
-                                        />
-
-                                        <Typography
-                                            sx={{
-                                                fontSize: "0.85rem",
-                                                fontWeight: 700,
-                                                color: "#e65100"
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: 0.8,
+                                                px: 1.5,
+                                                py: 0.5,
+                                                borderRadius: "20px",
+                                                background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
+                                                border: "1px solid #ffb74d",
+                                                boxShadow: "0 2px 8px rgba(255,152,0,0.15)"
                                             }}
                                         >
-                                            TAT: {editingTicket?.Tat || "-"}
-                                        </Typography>
-                                    </Box>
+                                            <AccessTimeIcon
+                                                sx={{
+                                                    fontSize: 18,
+                                                    color: "#f57c00"
+                                                }}
+                                            />
+
+                                            <Typography
+                                                sx={{
+                                                    fontSize: "0.85rem",
+                                                    fontWeight: 700,
+                                                    color: "#e65100"
+                                                }}
+                                            >
+                                                TAT:    {editingTicket.TicketStatus === "Doing"
+                                                    ? getTotalTat(editingTicket.Tat, editingTicket.UpdateDateTime)
+                                                    : editingTicket.Tat}
+                                            </Typography>
+                                        </Box>
                                     )}
                                 </Grid>
 

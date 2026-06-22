@@ -11,7 +11,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import Collapse from "@mui/material/Collapse";
 import { useNavigate } from 'react-router-dom';
 import NewTicket from '../Ticket List/NewTicket';
-
+import { parse } from "date-fns";
 function WorkStatus() {
 
 
@@ -212,7 +212,53 @@ function WorkStatus() {
                 fromWrkStatus: true
             }
         });
+
+
+
     };
+
+
+
+
+    const getTotalTat = (savedTat, updateDate) => {
+        let savedMinutes = 0;
+
+        // Parse "2 (H) 30 (m)"
+        const match = savedTat?.match(/(\d+)\s*\(H\)\s*(\d+)\s*\(m\)/);
+
+        if (match) {
+            savedMinutes =
+                Number(match[1]) * 60 +
+                Number(match[2]);
+        }
+
+        const startTime = parse(
+            updateDate,
+            "dd-MMM-yyyy hh:mm a",
+            new Date()
+        );
+
+        const runningMinutes = Math.floor(
+            (new Date() - startTime) / (1000 * 60)
+        );
+
+        const totalMinutes = savedMinutes + runningMinutes;
+
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+
+        return `${hours} (H) ${minutes} (m)`;
+    };
+
+    const [, setRefresh] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setRefresh(prev => prev + 1);
+        }, 60000);
+
+        return () => clearInterval(timer);
+    }, []);
 
     return (
         <>
@@ -499,8 +545,8 @@ function WorkStatus() {
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '5%', fontWeight: 'bold' }}>Ticket#</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '12%', fontWeight: 'bold' }}>Customer</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '10%', fontWeight: 'bold' }}>Description</TableCell>
-                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}>Status</TableCell>
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}>Tat</TableCell>
+                                                        <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '7%', fontWeight: 'bold' }}>Status</TableCell>
 
                                                         <TableCell sx={{ fontSize: '0.85rem', padding: '4px 8px', width: '4%', fontWeight: 'bold' }}>Sub Works</TableCell>
 
@@ -551,8 +597,11 @@ function WorkStatus() {
                                                                         >{row.TicketNo}</span></TableCell>
                                                                     <TableCell sx={{ fontSize: '0.95rem' }}>{row.CustomerName}</TableCell>
                                                                     <TableCell sx={{ fontSize: '0.95rem' }}>{row.Description}</TableCell>
-                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>{row.Tat}</TableCell>
-
+                                                                    <TableCell sx={{ fontSize: '0.95rem' }}>
+                                                                        {row.TicketStatus === "Doing"
+                                                                            ? getTotalTat(row.Tat, row.UpdateDate)
+                                                                            : row.Tat}
+                                                                    </TableCell>
                                                                     <TableCell sx={{ fontSize: '0.95rem' }}>{row.TicketStatus}</TableCell>
 
                                                                     <TableCell align="center" >
