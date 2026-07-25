@@ -77,7 +77,8 @@ export const WorkListProvider = ({ children }) => {
                 const activeTickets = response.data.data.filter(
                     item => item.IsCancelled !== true &&
                         item.IsCompleted === true &&
-                        item.IsPayableServCompleted !== true
+                        item.IsPayableServCompleted !== true &&
+                        item.PayableNotReq !== true
                 );
 
                 setPayableData(activeTickets);

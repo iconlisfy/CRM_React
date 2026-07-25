@@ -19,7 +19,7 @@ const DialogComponent = () => {
   return (
     <Dialog open={showDialog} onClose={handleClose} >
       <DialogContent>
-        <p>Your session has expired due to another login. Please log in again.</p>
+        <p>Your session has expired .Please log in again to continue</p>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}   sx={{

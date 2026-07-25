@@ -23,7 +23,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import Badge from '@mui/material/Badge';
 import { useWorkList } from '../Context/WorkListContext'
 import LockIcon from '@mui/icons-material/Lock';
-import ChangePassword from '../views/base/Change Password/ChangePassword'
+// import ChangePassword from '../views/base/Change Password/ChangePassword'
 
 const AppHeader = () => {
   const encryptionKey = "sblw-3hn8-sqoy19";
@@ -450,10 +450,10 @@ const AppHeader = () => {
           </DialogActions>
         </Dialog>
       </CContainer>
-
+{/* 
       <ChangePassword
         visible={openChangePassword}
-        setVisible={setOpenChangePassword} />
+        setVisible={setOpenChangePassword} /> */}
 
     </CHeader>
 

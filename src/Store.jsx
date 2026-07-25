@@ -1,4 +1,5 @@
 import { legacy_createStore as createStore } from 'redux';
+import { startIdleTimer } from './utils/IdleTimeout';
 const auth = JSON.parse(sessionStorage.getItem('auth'));
 const initialState = {
   sidebarShow: true,
@@ -74,8 +75,9 @@ const changeState = (state = initialState, { type, payload, }) => {
       return state;
   }
 
-
 }
 const store = createStore(changeState)
+
+startIdleTimer(store);
 
 export default store

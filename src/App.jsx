@@ -1,8 +1,8 @@
 import React, { Suspense, useEffect, } from 'react'
-import { HashRouter, Route, Routes,Navigate  } from 'react-router-dom'
+import { HashRouter, Route, Routes, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { CSpinner} from '@coreui/react'
- import './scss/style.scss'
+import { CSpinner } from '@coreui/react'
+import './scss/style.scss'
 // import Cancel from './views/base/Cancelinvoice/MainModel/Mainmode'
 import DialogComponent from './Dialog'
 import '@coreui/coreui/dist/css/coreui.min.css';
@@ -19,29 +19,34 @@ const Login = React.lazy(() => import('./views/pages/login/Login'))
 
 
 const App = () => {
- 
+
   const isAuthenticated = useSelector((state) => state.isAuthenticated)
 
 
   return (
-  
-    <HashRouter>
-       <DialogComponent />
-      <Suspense
-        fallback={
-          <div className="pt-3 text-center">
-            <CSpinner color="primary" variant="grow" />
-          </div>
-        }
-      >
-        <Routes>
-          <Route exact path="/login" name="Login Page" element={<Login />} />
-          <Route path="*" name="Home" element={isAuthenticated ? <DefaultLayout /> : <Navigate to="/login" />} />
-        </Routes>
-      </Suspense>
-   
-    </HashRouter>
+    <div
+      style={{
+        minHeight: "100%",
+        backgroundColor: "#f5f5f5", // Your background color
+      }}
+    >
+      <HashRouter>
+        <DialogComponent />
+        <Suspense
+          fallback={
+            <div className="pt-3 text-center">
+              <CSpinner color="primary" variant="grow" />
+            </div>
+          }
+        >
+          <Routes>
+            <Route exact path="/login" name="Login Page" element={<Login />} />
+            <Route path="*" name="Home" element={isAuthenticated ? <DefaultLayout /> : <Navigate to="/login" />} />
+          </Routes>
+        </Suspense>
 
+      </HashRouter>
+    </div>
   )
 }
 

@@ -223,13 +223,12 @@ function LoginForm() {
   return (
     <div
       style={{
-        height: '100vh',
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#ffffff",
       }}
     >
 
