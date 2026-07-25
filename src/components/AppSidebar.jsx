@@ -40,6 +40,7 @@ import axiosInstance from '../axios';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
+import Leads from '../views/base/Leads/Leads';
 
 const AppSidebar = () => {
 
@@ -110,77 +111,67 @@ const AppSidebar = () => {
       setOpenDialog(false); // close dialog
     }
   }
+
+
+
   const renderItem = (path, Icon, label) => {
-    const active = isActive(path) || hovered === path;
+
+    const active =
+      isActive(path) ||
+      hovered === path;
+
 
     return (
+
       <CNavLink
         onClick={() => navigate(path)}
         onMouseEnter={() => setHovered(path)}
         onMouseLeave={() => setHovered('')}
         style={{
-          display: 'block',
-          width: '100%',
-          padding: '10px 14px',
-          //  borderRadius: '10px',
-          marginBottom: '6px',
-
-          backgroundColor: active
-            ? '#fde2e5'            // 🔥 brighter light red
-            : 'transparent',
-
-          color: active
-            ? '#b02a37'            // 🔥 darker red text (better contrast)
-            : 'rgba(220,53,69,0.65)',
-
-          borderLeft: active
-            ? '4px solid #DC3545'  // 🔥 thicker highlight
-            : '4px solid transparent',
-
-          boxShadow: active
-            ? '0 2px 6px rgba(220,53,69,0.2)' // subtle glow
-            : 'none',
-
-          transform: active ? 'translateX(3px)' : 'none',
-
-          transition: 'all 0.2s ease',
+          margin: '6px 12px',
+          padding: '12px 15px',
+          borderRadius: '14px',
           cursor: 'pointer',
           textDecoration: 'none',
+          background: active ? 'rgba(59,130,246,0.25)' : 'transparent',
+          border: active ? '1px solid #fff' : '1px solid transparent',
+          transition: '0.3s'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.8 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}
+        >
+
           <Icon
             style={{
               fontSize: 24,
-              // color: active
-              //   ? '#DC3545'
-              //   : 'rgba(220,53,69,0.65)',
-
               color:
-                '#DC3545'
-              // : 'rgba(220,53,69,0.65)',
+                active ? '#fff' : '#CBD5E1'
             }}
           />
 
           <span
             style={{
               fontSize: 15,
-              fontWeight: active ? 600 : 500, // 🔥 bold active
-              // color: active
-              //   ? '#b02a37'
-              //   : 'rgba(220,53,69,0.65)',
-              color:
-                '#b02a37'
-
+              fontWeight: active ? 700 : 500,
+              color: active ? '#fff' : '#CBD5E1'
             }}
           >
             {label}
-          </span>
-        </Box>
-      </CNavLink>
-    );
-  };
 
+          </span>
+
+        </Box>
+
+      </CNavLink>
+
+    );
+
+  };
   // const hasImage = !!Image;
   const hasImage = !!Image && Image !== "null";
 
@@ -194,20 +185,21 @@ const AppSidebar = () => {
           dispatch({ type: 'set', sidebarShow: visible })
         }
         style={{
-          background: '#ffffff',
-          boxShadow: '4px 0 20px rgba(0,0,0,0.25)',
+          background: 'linear-gradient(135deg, #4975db 0%, #12265e 100%)',
+          // boxShadow: '4px 0 20px rgba(0,0,0,0.35)',
         }}
       >
         {/* HEADER */}
-        <CSidebarHeader
+        <CSidebarHeader 
           style={{
-            height: 180,
-            //  border: '1px solid',
+            border:'1px solid',
+            height: 190,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            //   borderBottom: '1px solid #fdb8bf',
+            background: 'linear-gradient(135deg, #4975db 0%, #12265e 100%)',
+            boxShadow: '4px 0 20px rgba(0,0,0,0.35)',
           }}
         >
           {/* <Avatar
@@ -240,27 +232,37 @@ const AppSidebar = () => {
                 : ""
             }
             sx={{
-              width: hasImage ? 80 : 70,
-              height: hasImage ? 105 : 70,
+              width: hasImage ? 90 : 75,
+              height: hasImage ? 110 : 75,
+
+              border: '3px solid rgba(255,255,255,0.8)',
+
+              boxShadow:
+                '0 4px 15px rgba(0,0,0,0.3)',
+
               p: 0,
+
               '& img': {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                filter: hasImage
-                  ? 'contrast(1.1) saturate(1.05)'
-                  : 'none',
               }
             }}
           >
             {!hasImage && (name?.trim()?.charAt(0)?.toUpperCase() || "?")}
           </Avatar>
 
-          <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'black', textTransform: 'uppercase', marginTop: '10px' }}>
-            {name}
+          <Typography
+            sx={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: '#fff',
+              textTransform: 'uppercase',
+              marginTop: '12px'
+            }}>            {name}
           </Typography>
 
-          <Typography sx={{ fontSize: 14, color: '#252424' }}>
+          <Typography sx={{ fontSize: 14, color: '#fff', }}>
             {dept}
           </Typography>
 
@@ -290,7 +292,71 @@ const AppSidebar = () => {
             },
           }}>
           {renderItem('/dashboard', DashboardIcon, 'DashBoard')}
-          {renderItem('/Leads', LeaderboardIcon, 'Leads')}
+          {/* {renderItem('/Leads', LeaderboardIcon, 'Leads')} */}
+
+
+
+          <Box
+            onClick={() => setVisible(true)}
+            onMouseEnter={() => setHovered('Leads')}
+            onMouseLeave={() => setHovered('')}
+            sx={{
+              margin: '6px 12px',
+              padding: '12px 15px',
+              borderRadius: '14px',
+              cursor: 'pointer',
+              textDecoration: 'none',
+
+              background:
+                hovered === 'Leads'
+                  ? 'rgba(59,130,246,0.25)'
+                  : 'transparent',
+
+              border:
+                hovered === 'Leads'
+                  ? '1px solid #fff'
+                  : '1px solid transparent',
+
+              transition: '0.3s',
+
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+
+            <LeaderboardIcon
+              sx={{
+                fontSize: 24,
+                color:
+                  hovered === 'Leads'
+                    ? '#fff'
+                    : '#CBD5E1',
+              }}
+            />
+
+
+            <Typography
+              sx={{
+                fontSize: 15,
+                fontWeight:
+                  hovered === 'Leads'
+                    ? 700
+                    : 500,
+
+                color:
+                  hovered === 'Leads'
+                    ? '#fff'
+                    : '#CBD5E1',
+              }}
+            >
+              Leads
+            </Typography>
+
+
+          </Box>
+
+
           {renderItem('/enq', SourceIcon, 'Enquiry')}
 
 
@@ -351,6 +417,13 @@ const AppSidebar = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+
+
+      <Leads
+        visible={visible}
+        setVisible={setVisible}
+      />
 
 
     </>

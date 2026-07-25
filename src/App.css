@@ -15,50 +15,48 @@
 
 :root {
   /* Button colors*/
-  --primary-btn-fontColor: #20bd44;
-  --primary-btn-border: 1px solid #20bd44;
-  --delete-btn-fontColor: #DC3545;
-  --delete-btn-border: 1px solid #DC3545;
-  --primary-btn-color: #28A745;
-  --primary-btn-hoverColor: #20bd44;
-  --secondary-btn-color: #0E87CA;
-  --secondary-btn-hoverColor: #0798e8;
-  --tertiary-btn-color: #DC3545;
-  --tertiary-btn-hoverColor: #e32739;
-  /*primary heading color in pages*/
-  --primary-heading-color: #DC3545;
-  /* secondary font color*/
-  --secondary-font-color: #28A745;
+  --primary-btn-fontColor: #4F46E5;
+  --primary-btn-border: 1px solid #4F46E5;
+  --delete-btn-fontColor: #F43F5E;
+  --delete-btn-border: 1px solid #F43F5E;
+  --primary-btn-color: #4F46E5;
+  --primary-btn-hoverColor: #4338CA;
+  --secondary-btn-color: #10B981;
+  --secondary-btn-hoverColor: #059669;
+  --tertiary-btn-color: #F43F5E;
+  --tertiary-btn-hoverColor: #E11D48;
 
-  /*primary color sidebar*/
-  --primary-bg-color: #DC3545;
+  /* Primary heading color in pages */
+  --primary-heading-color: #4F46E5;
+  --secondary-font-color: #10B981;
 
-  /* modal header color */
-  --primary-modalheader-color: #DC3545;
+  /* Primary color sidebar */
+  --primary-bg-color: #4F46E5;
 
-  /* colortone background color*/
-  --secondary-color: #F2F2F2;
+  /* Modal header color */
+  --primary-modalheader-color: #4F46E5;
 
-  /* header color*/
-  --primary-header-color: #343A40;
+  /* Colortone background color */
+  --secondary-color: #F8FAFC;
 
-  /* table header color*/
-  --header-bg-color: #d6d1d1;
+  /* Header color */
+  --primary-header-color: #0F172A;
 
-  /* focus color*/
-  --focus-bg-color: #adff2f;
+  /* Table header color */
+  --header-bg-color: #EEF2FF;
 
-  /* patient card heading color */
-  --card-header-color: black;
+  /* Focus color - soft indigo tint */
+  --focus-bg-color: #EEF2FF;
+  --focus-border-color: #6366F1;
 
-  /* patinet card font color */
-  --card-font-color: #b0b0b0;
-  --main-font-color: #fff;
+  /* Card heading & text colors */
+  --card-header-color: #0F172A;
+  --card-font-color: #64748B;
+  --main-font-color: #1E293B;
 
-  /* checkbox color*/
-  --primary-checkbox-color: #DC3545;
-  /*menu item font color*/
-  --primary-menuFont-color: #C0C0C0;
+  /* Checkbox color */
+  --primary-checkbox-color: #6366F1;
+  --primary-menuFont-color: #CBD5E1;
   --menuFont-hover-color: #ffffff;
 }
 
@@ -165,4 +163,61 @@ body::-webkit-scrollbar {
 /* Global Radio Button Checked Color */
 .MuiRadio-root.Mui-checked {
   color: var(--primary-checkbox-color) !important;
+}
+
+/* Modern Field Focus State */
+.MuiOutlinedInput-root.Mui-focused {
+  background-color: var(--focus-bg-color) !important;
+}
+
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--focus-border-color) !important;
+  border-width: 1.5px !important;
+}
+
+/* Modern Card Surface & Subtle Shadow */
+.MuiCard-root {
+  background-color: #ffffff !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.MuiCard-root:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Modern Table Header Styling */
+.MuiTableHead-root .MuiTableCell-head {
+  background-color: var(--header-bg-color) !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Table Row Hover */
+.MuiTableRow-root:hover {
+  background-color: #F8FAFC !important;
+}
+
+/* Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
 }
