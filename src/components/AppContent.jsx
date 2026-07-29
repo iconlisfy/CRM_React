@@ -4,6 +4,8 @@ import { CContainer, CSpinner } from '@coreui/react'
 import Dashboard from '../views/dashboard/Dashboard'
 import Leads from '../views/base/Leads/Leads'
 import Enquiry from '../views/base/Enquiry/Enquiry'
+import LeadsMain from '../views/base/Leads Main/LeadsMain'
+import LeadDetails from '../views/base/Leads Main/LeadDetails'
 // import CurrentWorkList from '../views/base/Current Work List/CurrentWorkList'
 // import TicketList from '../views/base/Ticket List/TicketList'
 // import TransferDetails from '../views/base/Transfer Details/TransferDetails'
@@ -24,8 +26,9 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          {/* <Route path="/Leads" element={<Leads />} /> */}
+          <Route path="/Leads" element={<LeadsMain />} />
           <Route path="/enq" element={<Enquiry />} />
+          <Route path="/LeadDetails/:leadCode" element={<LeadDetails />} />
         </Routes>
       </Suspense>
     </CContainer>

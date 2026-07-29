@@ -5,15 +5,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
-import logomain from '../../../assets/images/karunya diagnostics logo 2480x986 px white.png'
 import { encryptAES } from '../../../utils/Encryption';
 import axiosInstance from '../../../axios';
 import LockIcon from '@mui/icons-material/Lock';
 import PersonIcon from '@mui/icons-material/Person';
-import mobimg from '../../../assets/images/lisfiwebsitemob.jpg';
-import lisfiwebsite from '../../../assets/images/lisfi website login.jpeg';
 import store from '../../../Store';
 import iconlogo from '../../../assets/images/iconinfoware logo.png'
+import ApartmentRoundedIcon from '@mui/icons-material/ApartmentRounded';
+import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 function LoginForm() {
 
@@ -230,37 +230,29 @@ function LoginForm() {
         justifyContent: "center",
         backgroundColor: "#ffffff",
       }}
-    >
 
+    >
       <Box
         sx={{
-          width: { xs: "100%", sm: "400px", md: "420px", lg: "400px" },
-          padding: "20px",
-          backgroundColor: "#fff",
+          width: { xs: "100%", sm: "420px", md: "450px", lg: "430px" },
+          p: 4,
+          backgroundColor: "#f8fafc", // Card background
+          borderRadius: "20px",
+          boxShadow: "0 12px 35px rgba(0,0,0,0.12)",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          transition: "0.3s ease",
+          border: "1px solid #9ca3af", // grey border
+          "&:hover": {
+            boxShadow: "0 18px 45px rgba(0,0,0,0.18)",
+            transform: "translateY(-3px)",
+          },
         }}
       >
-        {/* <Box display={'flex'}  gap={1} sx={{ marginLeft: { xs: '250px', sm: '180px', md: '100px', lg: '-50px', xl: '200px' }, marginTop: '-70px',width:"300px" }}>
 
-        <img
-          className='Logo2'
-          src={iconlogo}
-          alt="Logo"
-          style={{
-            maxWidth: '100%',
-            
-            width: '260px',
-            height: '150px',
-            marginRight: 'auto',
-            marginTop: '60px',
-            
-          }}
-        />
-      </Box> */}
 
-        <Box display={'flex'} gap={1} justifyContent={"center"} sx={{ marginTop: "78px" }} >
+        <Box display={'flex'} gap={1} justifyContent={"center"} sx={{ marginTop: "8px" }} >
           <img
             className='Logo2'
             src={iconlogo}
@@ -305,15 +297,54 @@ function LoginForm() {
             size="small"
             fullWidth
             error={!!branchError}
-            //helperText={branchError}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <ApartmentRoundedIcon
+                    sx={{
+                      color: '#6B7280',
+                      fontSize: 20,
+                      mr: 0.5,
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            }}
             sx={{
-              '& .MuiOutlinedInput-root': {
-                '&.Mui-focused': {
-                  backgroundColor: 'var(--focus-bg-color)',
+              backgroundColor: "#fff",
+              borderRadius: "10px",
+
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                backgroundColor: "#fff",
+                height: "42px",
+
+                "& fieldset": {
+                  borderColor: "#D1D5DB",
+                },
+
+                "&:hover fieldset": {
+                  borderColor: "#6d8ef5",
+                },
+
+                "&.Mui-focused fieldset": {
+                  borderColor: "#4975db",
+                  borderWidth: "1.5px",
                 },
               },
-              '& .MuiSelect-select': {
-                backgroundColor: 'var(--input-bg-color)',
+
+              "& .MuiInputLabel-root": {
+                color: "#6B7280",
+                fontSize: "16px",
+              },
+
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#4975db",
+              },
+
+              "& .MuiInputBase-input": {
+                fontSize: "16px",
+                padding: "10px 8px",
               },
             }}
           >
@@ -331,20 +362,70 @@ function LoginForm() {
 
 
           <TextField
-            label={'Username'}
+            // label={'Username'}
+            placeholder={'Username'}
             size="small"
             variant="outlined"
             value={username}
             onChange={handleUsernameChange}
             error={!!usernameError}
             onKeyDown={(e) => handlekeypress(e, 'username')}
-            sx={{ marginBottom: '0px' }}
             autoComplete="username"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <PersonOutlineRoundedIcon
+                    sx={{
+                      color: '#6B7280',
+                      fontSize: 22,
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              backgroundColor: "#fff",
+              borderRadius: "10px",
+
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                backgroundColor: "#fff",
+                height: "42px",
+
+                "& fieldset": {
+                  borderColor: "#D1D5DB",
+                },
+
+                "&:hover fieldset": {
+                  borderColor: "#6d8ef5",
+                },
+
+                "&.Mui-focused fieldset": {
+                  borderColor: "#4975db",
+                  borderWidth: "1.5px",
+                },
+              },
+
+              "& .MuiInputLabel-root": {
+                color: "#6B7280",
+                fontSize: "16px",
+              },
+
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#4975db",
+              },
+
+              "& .MuiInputBase-input": {
+                fontSize: "16px",
+                padding: "10px 8px",
+              },
+            }}
           />
 
           <TextField
             id="password-input"
-            label={'Password'}
+            // label={'Password'}
+            placeholder={'Password'}
             type={showPassword ? 'text' : 'password'}
             size="small"
             variant="outlined"
@@ -354,6 +435,16 @@ function LoginForm() {
             onKeyDown={(e) => handlekeypress(e, 'password')}
             autoComplete="current-password"
             InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlinedIcon
+                    sx={{
+                      color: '#6B7280',
+                      fontSize: 22,
+                    }}
+                  />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
@@ -367,19 +458,60 @@ function LoginForm() {
                 </InputAdornment>
               ),
             }}
+            sx={{
+              backgroundColor: "#fff",
+              borderRadius: "10px",
+
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                backgroundColor: "#fff",
+                height: "42px",
+
+                "& fieldset": {
+                  borderColor: "#D1D5DB",
+                },
+
+                "&:hover fieldset": {
+                  borderColor: "#6d8ef5",
+                },
+
+                "&.Mui-focused fieldset": {
+                  borderColor: "#4975db",
+                  borderWidth: "1.5px",
+                },
+              },
+
+              "& .MuiInputLabel-root": {
+                color: "#6B7280",
+                fontSize: "16px",
+              },
+
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#4975db",
+              },
+
+              "& .MuiInputBase-input": {
+                fontSize: "16px",
+                padding: "10px 8px",
+              },
+            }}
           />
 
           <Box sx={{ display: "flex", justifyContent: 'flex-end', gap: 1 }}>
             <Button
               variant="contained"
               fullWidth
-
               sx={{
                 textTransform: 'none',
-                backgroundColor: 'var(--primary-btn-color)',
+
+                color: '#f5f7fa',
+                background:
+                  "linear-gradient(135deg, #6d8ef5 0%, #4975db 50%, #3f5483 100%)",
+                boxShadow: "0 4px 10px rgba(73,117,219,0.35)",
                 '&:hover': {
-                  backgroundColor: 'var(--primary-btn-hoverColor)',
-                  boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+                  background:
+                    "linear-gradient(135deg, #7b99f8 0%, #5b84e9 50%, #4a618f 100%)",
+                  boxShadow: "0 6px 14px rgba(73,117,219,0.45)",
                 },
               }}
               onClick={handleLogin}

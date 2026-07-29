@@ -8,8 +8,6 @@ import CIcon from '@coreui/icons-react'
 import { cilMenu, } from '@coreui/icons'
 import './AppHeader.css';
 import { Menu, Grid, MenuItem, useMediaQuery, useTheme, Avatar, Paper, Box, Typography, Fade, Divider, ClickAwayListener, IconButton, Dialog, DialogContent, DialogActions, Button, Popover } from '@mui/material';
-import avatar from "../assets/images/trans2.png"
-import image from '../assets/images/common.png'
 import axiosInstance from '../axios'
 import { decryptData, encryptAES } from '../utils/Encryption'
 import getReduxState from '../ReduxState'
@@ -20,18 +18,12 @@ import InputIcon from '@mui/icons-material/Input';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import LogoutIcon from '@mui/icons-material/Logout';
-import Badge from '@mui/material/Badge';
-import { useWorkList } from '../Context/WorkListContext'
-import LockIcon from '@mui/icons-material/Lock';
-// import ChangePassword from '../views/base/Change Password/ChangePassword'
 
 const AppHeader = () => {
   const encryptionKey = "sblw-3hn8-sqoy19";
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { username, dept, empId } = getReduxState();
-
-  const { transCount, transferData, setSelectedTransData, setShouldHighlight, payableCount, payableData, } = useWorkList();
 
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const handleNotifOpen = (event) => setNotifAnchorEl(event.currentTarget);
@@ -43,21 +35,6 @@ const AppHeader = () => {
   const [openDialog, setOpenDialog] = useState(false);
 
   const [openChangePassword, setOpenChangePassword] = useState(false);
-
-  // const handleLogout = () => {
-  //   // 1. Clear Redux state
-  //   dispatch({ type: 'Logout' });
-
-  //   // 2. Clear localStorage/sessionStorage if used
-  //   localStorage.clear();
-  //   sessionStorage.clear();
-
-  //   // 3. Redirect to login page
-  //   navigate("/login");
-
-  //   // 4. Close the dialog
-  //   setOpenDialog(false);
-  // };
 
   const handleLogout = async () => {
 
@@ -108,19 +85,6 @@ const AppHeader = () => {
   const toggleCard = (event) => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
   };
-
-  const handleSelectTransTkt = (ticketNo) => {
-    setSelectedTransData(ticketNo)
-    setShouldHighlight(true)
-    handleNotifClose();
-    navigate('/CurrentWrkList');
-  }
-
-  const totalNotificationCount =
-    transCount + (dept === "Accounts" ? payableCount : 0);
-
-
-  //  console.log("payable data", payableData)
 
   return (
     <CHeader position="sticky" className="mb-4 p-0 c-header" ref={headerRef} style={{ backgroundColor: '#ffffff' }}>
@@ -175,166 +139,9 @@ const AppHeader = () => {
                   color: 'grey',
                   whiteSpace: 'nowrap'
                 }}>
-               Welcome to Icon Infoware Technologies!
+                Welcome to Icon Infoware Technologies!
               </Typography>
 
-
-
-              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-
-                <IconButton
-                  onClick={() => setOpenChangePassword(true)}
-                  size="small"
-                  sx={{
-                    color: openChangePassword ? '#DC3545' : '#555',
-                    '&:hover': { backgroundColor: '#fff0f0', color: '#DC3545' },
-                    transition: 'color 0.2s',
-                  }}
-                >
-                  <LockIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  onClick={handleNotifOpen}
-                  size="small"
-                  sx={{
-                    color: notifOpen ? '#DC3545' : '#555',
-                    '&:hover': { backgroundColor: '#fff0f0', color: '#DC3545' },
-                    transition: 'color 0.2s',
-                  }}
-                >
-                  <NotificationsIcon fontSize="small" />
-                </IconButton>
-                {totalNotificationCount > 0 && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 0,
-                      right: 3,
-                      backgroundColor: '#DC3545',
-                      color: '#fff',
-                      borderRadius: '50%',
-                      width: 15,
-                      height: 15,
-                      fontSize: '0.6rem',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      lineHeight: 1,
-                      pointerEvents: 'none',
-                    }}>
-                    {totalNotificationCount}
-                  </Box>
-                )}
-              </Box>
-
-              <Popover
-                open={notifOpen}
-                anchorEl={notifAnchorEl}
-                onClose={handleNotifClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                PaperProps={{
-                  elevation: 4,
-                  sx: {
-                    mt: 1,
-                    borderRadius: '5px',
-                    width: 380,
-                    maxHeight: 480,
-                    overflow: 'hidden',
-                    border: '1px solid #f0f0f0',
-                  }
-                }}
-              >
-                {/* <Box sx={{ overflowY: 'auto', maxHeight: 420 }}>
-                  {transferData.length === 0 ? (
-                    <Box sx={{ py: 4, textAlign: 'center' }}>
-                      <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>No transfer requests</Typography>
-                    </Box>
-                  ) : (
-                    transferData.map((item, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          px: 2, py: 1.5,
-                          borderBottom: index < transferData.length - 1 ? '1px solid #f5f5f5' : 'none',
-                          '&:hover': { backgroundColor: '#fff8f8' },
-                          transition: 'background 0.15s',
-                          cursor: 'pointer',
-                        }}>
-
-                        <Typography sx={{
-                          fontSize: '0.78rem', color: '#212529', mb: 0.5,
-                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                        }} onClick={() => handleSelectTransTkt(item.TicketNo)}>
-                          TransTicket:"{item.TicketNo}" Work Transfered
-                          By {item.WorktransferredBy}
-                        </Typography>
-
-                      </Box>
-                    ))
-                  )}
-                </Box> */}
-                <Box sx={{ overflowY: 'auto', maxHeight: 420 }}>
-
-                  {/* Transfer Notifications */}
-                  {transferData.map((item, index) => (
-                    <Box
-                      key={`transfer-${index}`}
-                      sx={{
-                        px: 2,
-                        py: 1.5,
-                        borderBottom: '1px solid #f5f5f5',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => handleSelectTransTkt(item.TicketNo)}
-                    >
-                      <Typography sx={{ fontSize: '0.78rem' }}>
-                        🔄 Ticket "{item.TicketNo}" transferred by {item.WorktransferredBy}
-                      </Typography>
-                    </Box>
-                  ))}
-
-                  {/* Show only for Accounts */}
-                  {dept === "Accounts" &&
-                    payableData.map((item, index) => (
-                      <Box
-                        key={`payable-${index}`}
-                        sx={{
-                          px: 2,
-                          py: 1.5,
-                          borderBottom: '1px solid #f5f5f5',
-                          backgroundColor: '#fff8e1'
-                        }}
-                      >
-                        <Typography sx={{ fontSize: '0.78rem' }}>
-                          💰 Payable Service - Ticket "{item.ticketno}"" CreatedBy:"{item.CreatedBy}"
-                        </Typography>
-                        {item.PayableServNote && (
-                          <Typography
-                            sx={{
-                              fontSize: '0.72rem',
-                              color: '#666',
-                              mt: 0.5
-                            }}
-                          >
-                            Note: {item.PayableServNote}
-                          </Typography>
-                        )}
-                      </Box>
-                    ))}
-
-                  {transferData.length === 0 &&
-                    (dept !== "Accounts" || payableData.length === 0) && (
-                      <Box sx={{ py: 4, textAlign: 'center' }}>
-                        <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
-                          No notifications
-                        </Typography>
-                      </Box>
-                    )}
-
-                </Box>
-              </Popover>
 
               {/* USER */}
               <Box
@@ -450,7 +257,7 @@ const AppHeader = () => {
           </DialogActions>
         </Dialog>
       </CContainer>
-{/* 
+      {/* 
       <ChangePassword
         visible={openChangePassword}
         setVisible={setOpenChangePassword} /> */}

@@ -1,11 +1,10 @@
 import React from 'react'
 import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/Index'
-import { WorkListProvider } from '../Context/WorkListContext'
 
 const DefaultLayout = () => {
   return (
 
-    <WorkListProvider>
+
 
       <div className="d-flex flex-column min-vh-100">
         <AppSidebar />
@@ -18,7 +17,7 @@ const DefaultLayout = () => {
         </div>
       </div>
 
-    </WorkListProvider>
+
   )
 }
 

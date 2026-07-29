@@ -175,6 +175,10 @@ const AppSidebar = () => {
   // const hasImage = !!Image;
   const hasImage = !!Image && Image !== "null";
 
+
+  // const sidebarGradient = 'linear-gradient(135deg, #4975db 0%, #12265e 100%)';
+  const sidebarGradient = " #243863";
+
   return (
     <>
       <CSidebar
@@ -185,43 +189,19 @@ const AppSidebar = () => {
           dispatch({ type: 'set', sidebarShow: visible })
         }
         style={{
-          background: 'linear-gradient(135deg, #4975db 0%, #12265e 100%)',
-          // boxShadow: '4px 0 20px rgba(0,0,0,0.35)',
+          background: sidebarGradient,
         }}
       >
-        {/* HEADER */}
-        <CSidebarHeader 
+        <CSidebarHeader
           style={{
-            border:'1px solid',
             height: 190,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #4975db 0%, #12265e 100%)',
-            boxShadow: '4px 0 20px rgba(0,0,0,0.35)',
+            background: sidebarGradient,
           }}
         >
-          {/* <Avatar
-            src={
-              Image
-                ? Image.startsWith("data:")
-                  ? Image
-                  : `data:image/png;base64,${Image}`
-                : ""
-            }
-            sx={{
-              width: 80,
-              height:  105,
-              p: 0, // remove padding
-              '& img': {
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',   // 🔥 important
-                filter: 'contrast(1.1) saturate(1.05) sharpen(0.2)',
-              }
-            }}
-          /> */}
 
           <Avatar
             src={
@@ -234,14 +214,10 @@ const AppSidebar = () => {
             sx={{
               width: hasImage ? 90 : 75,
               height: hasImage ? 110 : 75,
-
               border: '3px solid rgba(255,255,255,0.8)',
-
               boxShadow:
                 '0 4px 15px rgba(0,0,0,0.3)',
-
               p: 0,
-
               '& img': {
                 width: '100%',
                 height: '100%',
@@ -259,7 +235,8 @@ const AppSidebar = () => {
               color: '#fff',
               textTransform: 'uppercase',
               marginTop: '12px'
-            }}>            {name}
+            }}>
+            {name}
           </Typography>
 
           <Typography sx={{ fontSize: 14, color: '#fff', }}>
@@ -292,14 +269,13 @@ const AppSidebar = () => {
             },
           }}>
           {renderItem('/dashboard', DashboardIcon, 'DashBoard')}
-          {/* {renderItem('/Leads', LeaderboardIcon, 'Leads')} */}
+          {renderItem('/Leads', LeaderboardIcon, 'Leads')}
 
+          {renderItem('/enq', SourceIcon, 'Enquiry')}
 
-
+          {/* LOGOUT */}
           <Box
-            onClick={() => setVisible(true)}
-            onMouseEnter={() => setHovered('Leads')}
-            onMouseLeave={() => setHovered('')}
+            onClick={() => setOpenDialog(true)}
             sx={{
               margin: '6px 12px',
               padding: '12px 15px',
@@ -308,12 +284,12 @@ const AppSidebar = () => {
               textDecoration: 'none',
 
               background:
-                hovered === 'Leads'
+                hovered === 'Exit'
                   ? 'rgba(59,130,246,0.25)'
                   : 'transparent',
 
               border:
-                hovered === 'Leads'
+                hovered === 'Exit'
                   ? '1px solid #fff'
                   : '1px solid transparent',
 
@@ -324,62 +300,29 @@ const AppSidebar = () => {
               gap: 2,
             }}
           >
-
-            <LeaderboardIcon
-              sx={{
-                fontSize: 24,
-                color:
-                  hovered === 'Leads'
-                    ? '#fff'
-                    : '#CBD5E1',
-              }}
-            />
-
-
+            <LogoutIcon sx={{
+              fontSize: 24,
+              color:
+                hovered === 'Exit'
+                  ? '#fff'
+                  : '#CBD5E1',
+            }} />
             <Typography
               sx={{
                 fontSize: 15,
                 fontWeight:
-                  hovered === 'Leads'
+                  hovered === 'Exit'
                     ? 700
                     : 500,
 
                 color:
-                  hovered === 'Leads'
+                  hovered === 'Exit'
                     ? '#fff'
                     : '#CBD5E1',
               }}
             >
-              Leads
+              Exit
             </Typography>
-
-
-          </Box>
-
-
-          {renderItem('/enq', SourceIcon, 'Enquiry')}
-
-
-
-
-          {/* LOGOUT */}
-          <Box
-            onClick={() => setOpenDialog(true)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              padding: '12px 14px',
-              color: '#DC3545',
-              cursor: 'pointer',
-              // borderRadius: 2,
-              '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.06)',
-              },
-            }}
-          >
-            <LogoutIcon style={{ fontSize: 24 }} />
-            <span style={{ fontSize: 14, fontWeight: 500 }}>Exit</span>
           </Box>
         </Box>
 
@@ -388,10 +331,10 @@ const AppSidebar = () => {
           dark
           onClick={() => dispatch({ type: 'set', sidebarShow: false })}
         />
-      </CSidebar>
+      </CSidebar >
 
       {/* LOGOUT DIALOG */}
-      <Dialog
+      < Dialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
         PaperProps={{
@@ -416,7 +359,7 @@ const AppSidebar = () => {
             Logout
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog >
 
 
 
