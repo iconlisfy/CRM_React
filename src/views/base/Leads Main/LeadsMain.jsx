@@ -6,6 +6,7 @@ import Installation from './Installation';
 import Leads from '../Leads/Leads';
 import AddIcon from '@mui/icons-material/Add';
 import axiosInstance from '../../../axios';
+import getReduxState from '../../../ReduxState';
 
 function CustomTabPanel({ children, value, index }) {
     return (
@@ -93,6 +94,51 @@ function LeadsMain() {
     const [openLeadModal, setOpenLeadModal] = useState(false);
     const [selectedTab, setSelectedTab] = useState(0);
 
+    const [ldViewsData, setLdViewsData] = useState([])
+
+    const { role, deptid, name, empId, BrnchKey, dept } = getReduxState()
+    const isAdmin = role === "Administrator";
+
+
+    // Fetch Leads Data
+    const fetchData = async () => {
+        try {
+            const fetchResponse = await axiosInstance.get(`/LeadSaveUpdateAPI/GetLeadsGroupWise?userGroup=${role}&LoginId=${empId}`)
+
+            if (fetchResponse.data && fetchResponse.data.data) {
+                setLdViewsData(fetchResponse.data.data)
+            }
+
+        } catch (error) {
+            console.log("Error while fetching data", error)
+        }
+    }
+
+
+    useEffect(() => {
+        fetchData()
+
+    }, [])
+
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return "";
+
+        const date = new Date(dateStr);
+        const day = String(date.getDate()).padStart(2, "0");
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        let hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12 || 12;
+
+        return `${day}-${month}-${year} ${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
+    };
+
+
+
 
     const handleChange = (event, newValue) => {
         if (newValue === 5) {
@@ -177,9 +223,33 @@ function LeadsMain() {
 
 
                     >
-                        <Tab label="Leads" {...a11yProps(0)} sx={tabStyle} />
+                        <Tab
+                            label={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <span>Leads</span>
+                                    <Box
+                                        sx={{
+                                            background: "#4975db",
+                                            color: "#fff",
+                                            borderRadius: "50%",
+                                            minWidth: 22,
+                                            height: 22,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        {ldViewsData.length}
+                                    </Box>
+                                </Box>
+                            }
+                            {...a11yProps(0)}
+                            sx={tabStyle}
+                        />
                         <Tab label="In Follow Up" {...a11yProps(1)} sx={tabStyle} />
-                        <Tab label="Installation" {...a11yProps(2)} sx={tabStyle} />
+                        <Tab label="On-Installation" {...a11yProps(2)} sx={tabStyle} />
                         <Tab label="Won" {...a11yProps(3)} sx={tabStyle} />
                         <Tab label="Lost" {...a11yProps(4)} sx={tabStyle} />
                         <Tab label="Add New" {...a11yProps(5)} sx={tabStyle} />
@@ -187,7 +257,12 @@ function LeadsMain() {
 
 
                     <CustomTabPanel value={value} index={0}>
-                        <LeadsView />
+                        <LeadsView
+                            ldViewsData={ldViewsData}
+                            setLdViewsData={setLdViewsData}
+                            formatDateTime={formatDateTime}
+
+                        />
                     </CustomTabPanel>
 
                     <CustomTabPanel value={value} index={1}>
@@ -222,6 +297,7 @@ function LeadsMain() {
                     if (!status) {
                         setSelectedTab(0);
                         setValue(0);
+                        fetchData()
                     }
                 }}
             />

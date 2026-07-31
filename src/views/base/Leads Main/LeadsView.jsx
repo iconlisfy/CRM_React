@@ -2,50 +2,10 @@ import { Card, CardContent, Grid, Paper, Table, TableBody, TableCell, TableConta
 import React, { useEffect, useState } from 'react'
 import axiosInstance from '../../../axios'
 import { useNavigate } from 'react-router-dom';
+import getReduxState from '../../../ReduxState';
 
-function LeadsView() {
+function LeadsView({ ldViewsData, setLdViewsData, formatDateTime }) {
     const navigate = useNavigate();
-    const [ldViewsData, setLdViewsData] = useState([])
-
-    const fetchData = async () => {
-        try {
-            const fetchResponse = await axiosInstance.get(`/LeadSaveUpdateAPI/GetAllLeads`)
-
-            if (fetchResponse.data && fetchResponse.data.data) {
-                setLdViewsData(fetchResponse.data.data)
-            }
-
-        } catch (error) {
-            console.log("Error while fetching data", error)
-        }
-    }
-
-    useEffect(() => {
-        fetchData()
-    }, [])
-
-    const formatDateTime = (dateStr) => {
-        if (!dateStr) return "";
-
-        const date = new Date(dateStr);
-
-        const day = String(date.getDate()).padStart(2, "0");
-
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-        const month = months[date.getMonth()];
-        const year = date.getFullYear();
-
-        let hours = date.getHours();
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-
-        const ampm = hours >= 12 ? "PM" : "AM";
-        hours = hours % 12 || 12;
-
-        return `${day}-${month}-${year} ${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
-    };
-
 
     return (
         <>

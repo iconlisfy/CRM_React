@@ -271,7 +271,7 @@ const AppSidebar = () => {
           {renderItem('/dashboard', DashboardIcon, 'DashBoard')}
           {renderItem('/Leads', LeaderboardIcon, 'Leads')}
 
-          {renderItem('/enq', SourceIcon, 'Enquiry')}
+          {/* {renderItem('/enq', SourceIcon, 'Enquiry')} */}
 
           {/* LOGOUT */}
           <Box
