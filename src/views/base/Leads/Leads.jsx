@@ -32,8 +32,7 @@ import closebtn from '../../../assets/images/Saki-NuoveXT-Actions-button-cancel.
 import useModal from '../../../components/UseModal';
 import axiosInstance from '../../../axios';
 import getReduxState from '../../../ReduxState';
-import { Bounce, ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from "react-toastify";
 import {
   Dialog,
   DialogTitle,
@@ -42,6 +41,7 @@ import {
 } from '@mui/material';
 // import PersonSwapIcon from "@mui/icons-material/PersonSwap";
 import CloseIcon from "@mui/icons-material/Close";
+
 function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   editLead = null, }) {
 
@@ -65,6 +65,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   const [listDept, setListDept] = useState(
     isAdmin ? "All" : deptid
   );
+
 
   const [focusField, setFocusField] = useState("");
 
@@ -120,6 +121,9 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
   const CustPhnInputRef = useRef(null)
   const ProductsInputRef = useRef(null)
+  const TransDetInputRef = useRef(null)
+  const TransDeptInputRef = useRef(null)
+  const TransEmpInputRef = useRef(null)
 
   const transferStaffList = transferDept
     ? allStaff.filter(
@@ -128,7 +132,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     )
     : [];
 
-    //===== Fetch All Leads Data =====
+  //===== Fetch All Leads Data =====
   const fetchAllData = async () => {
     try {
       const fetchResponse = await axiosInstance.get(`LeadSaveUpdateAPI/GetAllLeads`)
@@ -144,12 +148,11 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
 
   const handlePhoneChange = (e) => {
-    const phone = e.target.value;
+    const phone = e.target.value.replace(/[^\d+,]/g, "");
 
     setCustomerPhone(phone);
 
     if (phone.length >= 10) {
-
       const existingLead = leadsFullData.find(
         (lead) =>
           lead.CustomerPhone?.toString() === phone.toString()
@@ -161,7 +164,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       } else {
         setPhoneExists(false);
       }
-
     } else {
       setPhoneExists(false);
     }
@@ -196,6 +198,48 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     setUpdateDialogOpen(false);
     setSelectedRow(null);
   };
+
+
+
+  useEffect(() => {
+    if (!openLeadModal || !isEdited || !editLead) return;
+
+    setLeadId(editLead.LeadKey);
+    setTopDateTime(new Date(editLead.LeadDate));
+
+    setCustomerPhone(editLead.CustomerPhone || "");
+    setCustomerName(editLead.CustomerName || "");
+    setPlace(editLead.Place || "");
+
+    setSelectedStaff(editLead.AssignId || "");
+    setSelectedLeadSource(editLead.LeadSourceId || "");
+    setLeadSourceLocation(editLead.LeadLocation || "");
+
+    setRemarks(editLead.Remarks || "");
+
+    setFollowUpRequired(editLead.IsFollowUpReq);
+    setFollowUpDateTime(
+      editLead.FollowUpDate ? new Date(editLead.FollowUpDate) : new Date()
+    );
+
+    setSelectedLeadType(editLead.LeadTypeId || "");
+    setSelectedLeadQuality(editLead.LeadQualityId || "");
+
+    setDoubtfulLead(editLead.IsDoubtFull || false);
+
+    setEnquiredItems(
+      (editLead.Products || []).map((item, index) => ({
+        id: index + 1,
+        productKey: item.ProductId,
+        enquiryId: item.EnquiryId,
+        product: item.Product,
+        note: item.Note,
+        qty: item.Quantity,
+        value: item.Rate,
+      }))
+    );
+  }, [openLeadModal, isEdited, editLead]);
+
 
   //===== Fetch Department Data =====
   const fetchDepartment = async () => {
@@ -604,11 +648,11 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       console.log(response.data);
 
       if (response.data.status === true) {
-        toast.success("Saved Succesfully" || response.data.message)
+        toast.success(isEdited ? "Updated Successfully" : "Saved Successfully");
+      } else {
+        toast.error(response.data.message);
       }
-      else {
-        toast.error(response.data.message)
-      }
+
       handleNew();
       setOpenLeadModal(false)
     } catch (error) {
@@ -617,8 +661,32 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   };
 
-  // =====Lead Transfer======
+  // ===== Lead Transfer ======
   const handleTransfer = async () => {
+
+
+    if (!transferDept) {
+      setValidationMessage("Please Select Department");
+      setFocusField("TransDept")
+      setValidationDialogOpen(true)
+      return;
+    }
+
+    if (!transferStaff) {
+      setValidationMessage("Please Select a Staff");
+      setFocusField("TransEmp")
+      setValidationDialogOpen(true)
+      return;
+    }
+
+
+
+    if (!transferRemarks.trim()) {
+      setValidationMessage("Please Enter Details");
+      setFocusField("TransDet")
+      setValidationDialogOpen(true)
+      return;
+    }
     try {
       const requestData = {
         LeadCode: isEdited ? editLead?.LeadCode : generateLeadId(leadId),
@@ -633,17 +701,25 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         logUserId: empId,
       };
 
-      const transresponse = await axiosInstance.post("WorkListAPI/SaveTransferDetails", requestData);
+      const transresponse = await axiosInstance.post("/SaveTransferDetailsAPI/SaveTransferDetails", requestData);
       if (transresponse.data?.status === true) {
-        toast.success("Lead Transfer Successfully")
+        toast.success("Lead Transfer Successfully");
+
+        setOpenTransferModal(false);
+        setOpenLeadModal(false)
+        // optional reset
+        setSelectedStaff("");
+        setTransferStaff("");
+        setTransferDept("");
+        setTransferRemarks("");
+      } else {
+        toast.error(transresponse.data?.message || "Transfer failed");
       }
-      setOpenTransferModal(false);
+
     } catch (error) {
       toast.error("Transfer failed");
     }
   };
-
-
 
   return (
 
@@ -705,40 +781,30 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         <CModalBody classmstName='c-modal-body no-scroll '
           style={{
             zoom: "0.8",
-            backgroundColor: "#f8fafc",
-            backgroundImage:
+            background:
               "linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #dbeafe 100%)",
           }}>
 
 
           <Box >
-            {/* Top Header Title */}
-            {/* <Typography
-            variant="h5"
-            sx={{
-              color: '#4F46E5',
-              fontWeight: 'bold',
-              fontSize: '1.5rem',
-              // mb: 3,
-              mt: -3
-            }}
-          >
-            Leads
-          </Typography> */}
+
 
             {/* Main Form Grid */}
             <Grid container spacing={1}>
               {/* Customer & Lead Source Details Card */}
-              <Grid item xs={12}>
+              <Grid item xs={12} >
                 <Card
                   sx={{
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'transparent !important',
                     boxShadow: 'none',
-                    border: '1px solid #d1d5db',
+
+                    border: '1px solid #d1d5db', // light gray border   // darker, more visible gray
                     borderRadius: 2,
                   }}
                 >
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                  <CardContent sx={{
+                    backgroundColor: 'transparent',
+                  }}>
                     <Grid container spacing={1.5}>
                       {/* Row 1: Date Time Picker (Left) & Lead Id (Right) */}
                       <Grid item xs={12} sm={6}>
@@ -800,7 +866,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                       </Grid>
 
                       {/* Row 2: Customer Phone & Name */}
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={12} sm={3}>
                         <TextField
                           label="Customer Phone Number"
                           type="text"
@@ -811,6 +877,26 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           inputRef={CustPhnInputRef}
                           error={phoneExists}
                           helperText={phoneExists ? "Customer already has a lead" : ""}
+                          sx={{
+                            backgroundColor: '#fff',
+                            '& input': {
+                              padding: '8px',
+                              fontSize: '0.95rem',
+                              '&:focus': {
+                                backgroundColor: 'var(--focus-bg-color)'
+                              }
+                            }
+                          }}
+                        />
+                      </Grid>
+                           <Grid item xs={12} sm={3}>
+                        <TextField
+                          label="Contacted Person"
+                          type="text"
+                          size="small"
+                          fullWidth
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
                           sx={{
                             backgroundColor: '#fff',
                             '& input': {
@@ -844,6 +930,9 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           }}
                         />
                       </Grid>
+
+                      
+                 
 
                       {/* Row 3: Place, Assign to, Lead Source, Lead Source location */}
                       <Grid item xs={12} sm={6} md={3}>
@@ -954,9 +1043,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
               <Grid item xs={12}>
                 <Card
                   sx={{
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'transparent !important',
                     boxShadow: 'none',
-                    border: '1px solid #d1d5db',
+
+                    border: '1px solid #d1d5db', // light gray border   // darker, more visible gray
                     borderRadius: 2,
                   }}
                 >
@@ -1208,9 +1298,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
               <Grid item xs={12}>
                 <Card
                   sx={{
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'transparent !important',
                     boxShadow: 'none',
-                    border: '1px solid #d1d5db',
+
+                    border: '1px solid #d1d5db', // light gray border   // darker, more visible gray
                     borderRadius: 2,
                   }}
                 >
@@ -1377,7 +1468,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
                       {/* Bottom Right Buttons */}
                       <Grid item xs={12} sm={12} md={2.5} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, alignItems: 'center' }}>
-
                         <Button
                           onClick={() => setOpenTransferModal(true)}
                           variant="contained"
@@ -1613,6 +1703,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                         fontSize: "0.8rem",
                       },
                     }}
+                    inputRef={TransDeptInputRef}
                     sx={{
                       backgroundColor: '#fff',
 
@@ -1661,6 +1752,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                         fontSize: "0.8rem",
                       },
                     }}
+                    inputRef={TransEmpInputRef}
                     sx={{
                       backgroundColor: '#fff',
 
@@ -1704,8 +1796,9 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                     fullWidth
                     value={transferRemarks}
                     onChange={(e) => setTransferRemarks(e.target.value)}
+                    inputRef={TransDetInputRef}
                     size="small"
-                    placeholder="Enter remarks..."
+                    placeholder="Enter Details..."
                     InputLabelProps={{
                       sx: {
                         fontSize: "0.85rem",
@@ -1789,8 +1882,12 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
             if (focusField === "CustPhn") {
               CustPhnInputRef.current?.focus();
-            } else if (focusField === "products") {
-              ProductsInputRef.current?.focus();
+            } else if (focusField === "TransEmp") {
+              TransEmpInputRef.current?.focus();
+            } else if (focusField === "TransDept") {
+              TransDeptInputRef.current?.focus();
+            } else if (focusField === "TransDet") {
+              TransDetInputRef.current?.focus();
             }
             setFocusField("");
           }
@@ -1811,7 +1908,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         </DialogActions>
       </Dialog>
 
-      <ToastContainer autoClose={1000} hideProgressBar={true} position='top-center' theme='colored' transition={Bounce} />
 
     </>
 

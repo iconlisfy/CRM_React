@@ -270,6 +270,7 @@ const AppSidebar = () => {
           }}>
           {renderItem('/dashboard', DashboardIcon, 'DashBoard')}
           {renderItem('/Leads', LeaderboardIcon, 'Leads')}
+          {renderItem('/CustomerDetails', GroupsIcon, 'CustomerDetails')}
 
           {/* {renderItem('/enq', SourceIcon, 'Enquiry')} */}
 

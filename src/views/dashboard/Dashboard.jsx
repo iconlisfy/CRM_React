@@ -212,7 +212,14 @@ export default function Dashboard() {
 
   }, [selectedStaff, BrnchKey, empId, role]);
   return (
-    <div >
+    <Box
+    sx={{
+      backgroundColor: "#fff",
+      minHeight: "100vh",
+      p: 2,
+      borderRadius: 2,
+    }}
+  >
 
       <Grid
         container
@@ -378,7 +385,7 @@ export default function Dashboard() {
 
 
 
-    </div>
+    </Box>
 
   );
 }

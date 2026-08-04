@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import axiosInstance from '../../../axios';
 import getReduxState from '../../../ReduxState';
 
+
 function CustomTabPanel({ children, value, index }) {
     return (
         <div hidden={value !== index}>
@@ -79,7 +80,7 @@ const tabStyle = {
     },
 
     "&.Mui-selected:hover": {
-        transform: "translateY(-4px) scale(1.02)",
+        transform: "translateY(-1px) scale(1)",
         background:
             "linear-gradient(135deg, #7b99f8 0%, #5b84e9 50%, #3f5483 100%)",
 
@@ -90,20 +91,31 @@ const tabStyle = {
 
 function LeadsMain() {
 
+    const { role, deptid, name, empId, BrnchKey, dept } = getReduxState()
+    const isAdmin = role === "Administrator";
     const [value, setValue] = useState(0);
     const [openLeadModal, setOpenLeadModal] = useState(false);
     const [selectedTab, setSelectedTab] = useState(0);
 
     const [ldViewsData, setLdViewsData] = useState([])
 
-    const { role, deptid, name, empId, BrnchKey, dept } = getReduxState()
-    const isAdmin = role === "Administrator";
+    const [allDept, setAllDept] = useState([]);
 
+
+    const [allStaff, setAllStaff] = useState([]);
+    const [selectedStaff, setSelectedStaff] = useState(empId);
+
+    const [selectedDept, setSelectedDept] = useState(
+        isAdmin ? "All" : deptid
+    );
 
     // Fetch Leads Data
     const fetchData = async () => {
         try {
-            const fetchResponse = await axiosInstance.get(`/LeadSaveUpdateAPI/GetLeadsGroupWise?userGroup=${role}&LoginId=${empId}`)
+
+            const deptValue = selectedDept === "All" ? 0 : selectedDept;
+            const staffValue = selectedStaff === "All" ? 0 : selectedStaff;
+            const fetchResponse = await axiosInstance.get(`/LeadSaveUpdateAPI/GetLeadsGroupWise?userGroup=${role}&LoginId=${empId}&DeptId=${deptValue}&StaffId=${staffValue}`)
 
             if (fetchResponse.data && fetchResponse.data.data) {
                 setLdViewsData(fetchResponse.data.data)
@@ -113,10 +125,50 @@ function LeadsMain() {
             console.log("Error while fetching data", error)
         }
     }
+    useEffect(() => {
+        fetchData();
+    }, [selectedDept, selectedStaff]);
 
+    //===== Fetch Department Data =====
+    const fetchDepartment = async () => {
+        try {
+            const fetchResponse = await axiosInstance.get(`MasterAPI/Search?Type=Dept`)
+
+            if (fetchResponse.data && fetchResponse.data.MasterList) {
+                setAllDept(fetchResponse.data.MasterList);
+            }
+        } catch (error) {
+            console.log("error while fetching all data", error)
+        }
+    }
+
+    //===== Fetch Staff Data =====
+    const fetchStaff = async () => {
+        try {
+            const res = await axiosInstance.get("/AcctMstStaffAPI/GetAll");
+
+            const staffData = res?.data?.staff;
+
+            setAllStaff(Array.isArray(staffData) ? staffData : []);
+        } catch (err) {
+            console.log("Error fetching staff", err);
+            setAllStaff([]);
+        }
+    };
+
+
+
+    const StaffList = selectedDept === "All"
+        ? allStaff
+        : selectedDept
+            ? allStaff.filter(
+                (staff) => Number(staff.Dept_id) === Number(selectedDept)
+            )
+            : [];
 
     useEffect(() => {
-        fetchData()
+        fetchDepartment()
+        fetchStaff()
 
     }, [])
 
@@ -168,11 +220,17 @@ function LeadsMain() {
                     fontWeight: 'bold',
                     marginTop: { xs: '-20px', sm: '-20px', md: "-20px", lg: "-20px", xl: "-20px" }
                 }}>
-                LEADS
+                Leads
             </Typography>
 
             <Card sx={{
-                height: { xs: 'calc(100vh - -20px)', sm: 'calc(100vh - 5px)', md: 'calc(100vh - 2px)', lg: 'calc(100vh - -5px)', xl: 'calc(100vh - 0px)' },
+                height: {
+                    xs: 'calc(100vh - -20px)',
+                    sm: 'calc(100vh - 5px)',
+                    md: 'calc(100vh - 2px)',
+                    lg: 'calc(100vh - -5px)',
+                    xl: 'calc(100vh - 0px)'
+                },
 
             }}>
                 <CardContent>
@@ -228,9 +286,10 @@ function LeadsMain() {
                                 <Box display="flex" alignItems="center" gap={1}>
                                     <span>Leads</span>
                                     <Box
+
                                         sx={{
-                                            background: "#4975db",
-                                            color: "#fff",
+                                            bgcolor: selectedTab === 0 ? "#fff" : "#4975db",
+                                            color: selectedTab === 0 ? "#4975db" : "#fff",
                                             borderRadius: "50%",
                                             minWidth: 22,
                                             height: 22,
@@ -239,7 +298,9 @@ function LeadsMain() {
                                             justifyContent: "center",
                                             fontSize: "0.75rem",
                                             fontWeight: 700,
+                                            transition: "0.3s",
                                         }}
+
                                     >
                                         {ldViewsData.length}
                                     </Box>
@@ -252,8 +313,29 @@ function LeadsMain() {
                         <Tab label="On-Installation" {...a11yProps(2)} sx={tabStyle} />
                         <Tab label="Won" {...a11yProps(3)} sx={tabStyle} />
                         <Tab label="Lost" {...a11yProps(4)} sx={tabStyle} />
-                        <Tab label="Add New" {...a11yProps(5)} sx={tabStyle} />
-                    </Tabs>
+                        <Tab
+                            label={
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                    <span>Add New</span>
+                                    <AddIcon sx={{
+                                        bgcolor: selectedTab === 5 ? "#fff" : "#4975db",
+                                        color: selectedTab === 5 ? "#4975db" : "#fff",
+                                        borderRadius: "50%",
+                                        minWidth: 22,
+                                        height: 22,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 700,
+                                        transition: "0.3s",
+                                    }} />
+
+                                </Box>
+                            }
+                            {...a11yProps(5)}
+                            sx={tabStyle}
+                        />                    </Tabs>
 
 
                     <CustomTabPanel value={value} index={0}>
@@ -261,6 +343,13 @@ function LeadsMain() {
                             ldViewsData={ldViewsData}
                             setLdViewsData={setLdViewsData}
                             formatDateTime={formatDateTime}
+                            isAdmin={isAdmin}
+                            allDept={allDept}
+                            selectedDept={selectedDept}
+                            setSelectedDept={setSelectedDept}
+                            selectedStaff={selectedStaff}
+                            setSelectedStaff={setSelectedStaff}
+                            StaffList={StaffList}
 
                         />
                     </CustomTabPanel>

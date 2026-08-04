@@ -23,6 +23,8 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../../axios";
 import Leads from "../Leads/Leads";
+import FollowUp from "../Follow Up/FollowUp";
+import FollowupHistory from "../Follow Up History/FollowupHistory";
 
 // ---- Design tokens -------------------------------------------------------
 const GRADIENT = "linear-gradient(135deg, #6d8ef5 0%, #4975db 50%, #3f5483 100%)";
@@ -59,6 +61,8 @@ function LeadDetails() {
     const navigate = useNavigate();
 
     const [openLeadModal, setOpenLeadModal] = useState(false);
+    const [openFollowupModal, setOpenFollowupModal] = useState(false);
+    const [openFollowupHistryModal, setOpenFollowupHistryModal] = useState(false);
 
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -120,11 +124,11 @@ function LeadDetails() {
     };
 
     const handleFollowUp = () => {
-        navigate(`/leads/${leadCode}/follow-up`);
+        setOpenFollowupModal(true)
     };
 
     const handleFollowUpHistory = () => {
-        navigate(`/leads/${leadCode}/follow-up-history`);
+        setOpenFollowupHistryModal(true)
     };
 
 
@@ -267,7 +271,7 @@ function LeadDetails() {
                                 capitalize
                             />
                             <StatBlock
-                                label="Follow-up"
+                                label="Last Follow-up"
                                 value={lead.IsFollowUpReq ? formatDateTime(lead.FollowUpDate) : "Not needed"}
                                 sub={lead.IsFollowUpReq ? "Required" : null}
                                 flex={1.6}
@@ -309,7 +313,7 @@ function LeadDetails() {
                                 </Typography>
 
                                 <DetailLine label="Source" value={lead.LeadSource} />
-                                <DetailLine label="Type" value={lead.LeadTypeId} />
+                                <DetailLine label="Type" value={lead.LeadType} />
                                 <DetailLine label="Created" value={formatDate(lead.LeadDate)} last />
 
                             </Box>
@@ -418,6 +422,19 @@ function LeadDetails() {
                 editLead={lead}
             />
 
+
+            <FollowUp
+                openFollowupModal={openFollowupModal}
+                setOpenFollowupModal={setOpenFollowupModal}
+                editLead={lead}
+            />
+
+
+            <FollowupHistory
+                openFollowupHistryModal={openFollowupHistryModal}
+                setOpenFollowupHistryModal={setOpenFollowupHistryModal}
+                editLead={lead}
+            />
 
         </>
 
