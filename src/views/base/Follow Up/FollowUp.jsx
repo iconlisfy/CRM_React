@@ -37,14 +37,16 @@ import {
     DialogContent,
     DialogActions
 } from '@mui/material';
+import ClearIcon from "@mui/icons-material/Clear";
 
-function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLead = null, }) {
+function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLead = null, followUpId,
+    editFollowUp = null
+}) {
 
     const { modalClass } = useModal()
 
     const { role, deptid, name, empId, BrnchKey, dept, branch } = getReduxState()
 
-    console.log("editLead", editLead)
     const [nextFollowUp, setNextFollowUp] = useState(false);
     const [followUpDateTime, setFollowUpDateTime] = useState(new Date());
 
@@ -53,8 +55,15 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
     const [selectedFollowUpSts, setSelectedFollowUpSts] = useState('')
 
     const [leadQualityList, setLeadQualityList] = useState([])
+    const [demoStgList, setDemoStgList] = useState([])
+    const [quotationStgList, setQuotationStgList] = useState([])
+    const [custStgList, setCustStgList] = useState([])
     const [FollowUpStsList, setFollowUpStsList] = useState([])
     const [description, setDescription] = useState("");
+
+    const [selectedDemoStg, setSelectedDemoStg] = useState('')
+    const [selectedQuotationStg, setSelectedQuotatioStg] = useState('')
+    const [selectedCustStg, setSelectedCustStg] = useState('')
 
     const [focusField, setFocusField] = useState("");
     const [validationDialogOpen, setValidationDialogOpen] = useState(false);
@@ -68,6 +77,33 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
     const NextFollowupInputRef = useRef(null)
     const DescInputRef = useRef(null)
     const LeadQuaInputRef = useRef(null)
+
+    // Highlight Text
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    function highlightText(text = "", query = "") {
+        if (!query) return text;
+
+        const safeQuery = escapeRegExp(query);
+
+        const regex = new RegExp(`(${safeQuery})`, "gi");
+
+        const parts = text.split(regex);
+
+        return parts.map((part, i) =>
+            part.toLowerCase() === query.toLowerCase() ? (
+                <span
+                    key={i}
+                    style={{ backgroundColor: "var(--focus-bg-color)", fontWeight: 600 }}
+                >
+                    {part}
+                </span>
+            ) : (
+                part
+            )
+        );
+    }
 
     //===== Fetch Masters Data =====
     const fetchMasters = async () => {
@@ -89,6 +125,33 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                 setFollowUpStsList(fetchFollowUpStatus.data.MasterList);
             }
 
+            const fetchDemoStages = await axiosInstance.get(
+                `MasterAPI/Search?Type=DemoStg`
+            );
+
+            if (fetchDemoStages.data?.MasterList) {
+                setDemoStgList(fetchDemoStages.data.MasterList);
+            }
+
+            const fetchQuotationStages = await axiosInstance.get(
+                `MasterAPI/Search?Type=QTNSts`
+            );
+
+            if (fetchQuotationStages.data?.MasterList) {
+                setQuotationStgList(fetchQuotationStages.data.MasterList);
+            }
+
+
+            const fetchCustomerStages = await axiosInstance.get(
+                `MasterAPI/Search?Type=CustDecSts`
+            );
+
+            if (fetchCustomerStages.data?.MasterList) {
+                setCustStgList(fetchCustomerStages.data.MasterList);
+            }
+
+
+
         } catch (error) {
             console.log("error while fetching all data", error);
         }
@@ -106,6 +169,8 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
             ) || 0
         ).toFixed(2);
 
+
+    //=========== Reset Function =============
     const resetFollowUpForm = () => {
         setSelectedFollowUpSts("");
         setSelectedLeadQuality("");
@@ -113,11 +178,44 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
         setNextFollowUp(false);
         setFollowUpDateTime(new Date());
         setLeadSourceLoc("");
+
+        // Reset other fields if they are used later
+        setSelectedDemoStg("");
+        setSelectedQuotatioStg("");
+        setSelectedCustStg("");
+
+        // Reset validation state
+        setValidationMessage("");
+        setFocusField("");
+        setValidationDialogOpen(false);
     };
 
 
-    const handleSaveFollowUp = async () => {
+    useEffect(() => {
+        if (!editFollowUp) return;
 
+        console.log("Loading FollowUp:", editFollowUp);
+
+        setSelectedFollowUpSts(editFollowUp?.FollowUpStatusId ?? "");
+        setSelectedLeadQuality(
+            editFollowUp.FollowUpQualityId === 0
+                ? ""
+                : editFollowUp.FollowUpQualityId
+        );
+        setDescription(editFollowUp.FollowUpDescription ?? "");
+        setLeadSourceLoc(editFollowUp.FollowUpLeadSourceLocation ?? "");
+        setNextFollowUp(!!editFollowUp.FollowUp_IsRequired);
+
+        setFollowUpDateTime(
+            editFollowUp.NextFollowUp_Date
+                ? new Date(editFollowUp.NextFollowUp_Date)
+                : new Date()
+        );
+    }, [editFollowUp]);
+
+
+    //========== Save Follow Up ============
+    const handleSaveFollowUp = async () => {
 
         if (!selectedFollowUpSts) {
             setValidationMessage("Please select Follow Up Status");
@@ -126,26 +224,26 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
             return;
         }
 
-        if (!selectedLeadQuality) {
-            setValidationMessage("Please select Lead Quality");
-            setFocusField("LeadQua")
-            setValidationDialogOpen(true)
-            return;
-        }
+        // if (!selectedLeadQuality) {
+        //     setValidationMessage("Please select Lead Quality");
+        //     setFocusField("LeadQua")
+        //     setValidationDialogOpen(true)
+        //     return;
+        // }
 
-        if (!description.trim()) {
-            setValidationMessage("Please enter Follow Up Description");
-            setFocusField("Desc")
-            setValidationDialogOpen(true)
-            return;
-        }
+        // if (!description.trim()) {
+        //     setValidationMessage("Please enter Follow Up Description");
+        //     setFocusField("Desc")
+        //     setValidationDialogOpen(true)
+        //     return;
+        // }
 
-        if (!nextFollowUp) {
-            setValidationMessage("Please select Next Follow Up Date");
-            setFocusField("NextFollowup")
-            setValidationDialogOpen(true)
-            return;
-        }
+        // if (!nextFollowUp) {
+        //     setValidationMessage("Please select Next Follow Up Date");
+        //     setFocusField("NextFollowup")
+        //     setValidationDialogOpen(true)
+        //     return;
+        // }
 
         // if (!LeadSourceLoc.trim()) {
         //     toast.error("Please enter Lead Source Location");
@@ -156,20 +254,27 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
         try {
 
             const requestData = {
-                LeadCode: editLead?.LeadCode,
+                IsEdit: !!editFollowUp,
+                LeadCode: editLead?.LeadCode || editFollowUp?.LeadCode,
+
+                // Only send FollowUp_Id while editing
+                ...(editFollowUp?.FollowUp_Id
+                    ? { FollowUp_Id: editFollowUp.FollowUp_Id }
+                    : {}),
+
                 FollowUp_Status: selectedFollowUpSts || "",
                 FollowUp_Desc: description,
-                FollowUp_Quality: selectedLeadQuality || 0,
+                FollowUp_Quality: selectedLeadQuality || '',
                 NextFollowUp_Date: nextFollowUp
                     ? follwupDate
-                    : null,
+                    : '',
                 FollowUp_IsRequired: nextFollowUp,
                 FollowUp_LeadSrcLoc: LeadSourceLoc,
                 logReason: "Follow Up",
-                logDesc: `FollowUp added for LeadId:${editLead?.LeadCode} `,
+                logDesc: `FollowUp added for LeadId:${editLead?.LeadCode || editFollowUp?.LeadCode} `,
                 logForm: "FollowUp",
-                logUser: name,      // Replace with logged-in user
-                logUserId: empId           // Replace with logged-in user id
+                logUser: name,
+                logUserId: empId
             };
 
             console.log(requestData);
@@ -180,8 +285,11 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
             );
 
             if (response.data) {
-                toast.success("Follow Up Saved Successfully");
+                toast.success
+                    (editFollowUp ? "Follow Up Updated Successfully" :
+                        "Follow Up Saved Successfully");
                 setOpenFollowupModal(false);
+                resetFollowUpForm();
             }
             resetFollowUpForm()
         } catch (error) {
@@ -190,12 +298,9 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
         }
     };
 
-    console.log("editLead?.CustomerPhone", editLead?.CustomerPhone)
-
 
     return (
         <>
-
 
             <CModal
                 size={size}
@@ -205,6 +310,7 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                 visible={openFollowupModal}
                 onClose={() => setOpenFollowupModal(false)}
                 aria-labelledby="VerticallyCenteredExample">
+
                 <CModalHeader
                     closeButton={false}
                     style={{
@@ -294,7 +400,7 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                                 fontSize: "14px"
                                             }}
                                         >
-                                            {editLead?.LeadCode || "-"}
+                                            {editLead?.LeadCode || editFollowUp?.LeadCode || "-"}
                                         </Box>
                                     </Box>
                                 </Grid>
@@ -341,7 +447,7 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                                             color: "#333",
                                                         }}
                                                     >
-                                                        {editLead?.CustomerName || "-"}
+                                                        {editLead?.CustomerName || editFollowUp?.CustomerName || "-"}
                                                     </Typography>
                                                 </Box>
                                             </Grid>
@@ -377,7 +483,7 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                                             color: "#333",
                                                         }}
                                                     >
-                                                        {editLead?.CustomerPhone || "-"}
+                                                        {editLead?.CustomerPhone || editFollowUp?.CustomerPhno || "-"}
                                                     </Typography>
                                                 </Box>
                                             </Grid>
@@ -386,42 +492,59 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                 </Grid>
 
 
-
-
-
-
                                 <Grid item xs={12}>
-                                    <TextField
-                                        label="Follow Up Status"
-                                        type="text"
+                                    <Autocomplete
                                         size="small"
                                         fullWidth
-                                        value={selectedFollowUpSts}
-                                        onChange={(e) => setSelectedFollowUpSts(e.target.value)}
-                                        select
-                                        inputRef={FollowupStsInputRef}
-                                        sx={{
-                                            backgroundColor: '#fff',
-                                            '& input': {
-                                                padding: '8px',
-                                                fontSize: '0.95rem',
-                                                '&:focus': {
-                                                    backgroundColor: 'var(--focus-bg-color)'
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        {FollowUpStsList
-                                            ?.filter(item => item?.desc?.trim()) // remove empty names
-                                            .map((item) => (
-                                                <MenuItem key={item.mstr_key} value={item.mstr_key}>
-                                                    {item.desc.trim()}
-                                                </MenuItem>
-                                            ))
+                                        options={FollowUpStsList?.filter(item => item?.desc?.trim()) || []}
+                                        getOptionLabel={(option) => option?.desc?.trim() || ""}
+                                        value={
+                                            FollowUpStsList?.find(
+                                                item => item.mstr_key === selectedFollowUpSts
+                                            ) || null
                                         }
-                                    </TextField>
+                                        onChange={(event, newValue) => {
+                                            setSelectedFollowUpSts(newValue ? newValue.mstr_key : "");
+                                        }}
+                                        isOptionEqualToValue={(option, value) =>
+                                            option.mstr_key === value.mstr_key
+                                        }
+                                        renderOption={(props, option, { inputValue }) => (
+                                            <li {...props}>
+                                                {highlightText(option.desc.trim(), inputValue)}
+                                            </li>
+                                        )}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Follow Up Status"
+                                                inputRef={FollowupStsInputRef}
+                                                sx={{
+                                                    backgroundColor: '#fff',
+                                                    '& input': {
+                                                        padding: '8px',
+                                                        fontSize: '0.95rem',
+                                                        '&:focus': {
+                                                            backgroundColor: 'var(--focus-bg-color)'
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                        slotProps={{
+                                            paper: {
+                                                sx: {
+                                                    // maxHeight: 250,
+                                                    "& .MuiAutocomplete-option": {
+                                                        // minHeight: "32px",
+                                                        padding: "4px 12px",
+                                                        fontSize: "0.9rem",
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    />
                                 </Grid>
-
 
                                 <Grid item xs={12} sm={6} lg={6}>
                                     <TextField
@@ -432,7 +555,6 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                         value={selectedLeadQuality}
                                         onChange={(e) => { setSelectedLeadQuality(e.target.value) }}
                                         select
-                                        inputRef={LeadQuaInputRef}
                                         sx={{
                                             backgroundColor: '#fff',
                                             '& input': {
@@ -443,7 +565,23 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                                 }
                                             }
                                         }}
+                                        InputProps={{
+                                            endAdornment: selectedLeadQuality && (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent menu from opening
+                                                            setSelectedLeadQuality("");
+                                                        }}
+                                                    >
+                                                        <ClearIcon fontSize="small" />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
                                     >
+
                                         {leadQualityList
                                             ?.filter(item => item?.desc?.trim()) // remove empty names
                                             .map((item) => (
@@ -454,6 +592,102 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                         }
                                     </TextField>
                                 </Grid>
+                                {/* 
+
+                                <Grid item xs={12} sm={6} lg={6}>
+                                    <TextField
+                                        label="Demo Stages"
+                                        select
+                                        size="small"
+                                        fullWidth
+                                        value={selectedDemoStg}
+                                        onChange={(e) => setSelectedDemoStg(e.target.value)}
+                                        sx={{
+                                            backgroundColor: "#fff",
+                                            "& input": {
+                                                padding: "8px",
+                                                fontSize: "0.95rem",
+                                                "&:focus": {
+                                                    backgroundColor: "var(--focus-bg-color)",
+                                                },
+                                            },
+                                        }}
+                                        InputProps={{
+                                            endAdornment: selectedDemoStg && (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent menu from opening
+                                                            setSelectedDemoStg("");
+                                                        }}
+                                                    >
+                                                        <ClearIcon fontSize="small" />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    >
+
+                                        {demoStgList
+                                            ?.filter((item) => item?.desc?.trim())
+                                            .map((item) => (
+                                                <MenuItem key={item.mstr_key} value={item.mstr_key}>
+                                                    {item.desc.trim()}
+                                                </MenuItem>
+                                            ))}
+                                    </TextField>
+                                </Grid>
+
+
+                                <Grid item xs={12} sm={6} lg={12}>
+                                    <TextField
+                                        label="Quotation / Commercial Stages"
+                                        type="text"
+                                        size="small"
+                                        fullWidth
+                                        value={selectedQuotationStg}
+                                        onChange={(e) => { setSelectedQuotatioStg(e.target.value) }}
+                                        select
+                                        sx={{
+                                            backgroundColor: '#fff',
+                                            '& input': {
+                                                padding: '8px',
+                                                fontSize: '0.95rem',
+                                                '&:focus': {
+                                                    backgroundColor: 'var(--focus-bg-color)'
+                                                }
+                                            }
+                                        }}
+
+                                        InputProps={{
+                                            endAdornment: selectedQuotationStg && (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent menu from opening
+                                                            setSelectedQuotatioStg("");
+                                                        }}
+                                                    >
+                                                        <ClearIcon fontSize="small" />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    >
+                                        {quotationStgList
+                                            ?.filter(item => item?.desc?.trim()) // remove empty names
+                                            .map((item) => (
+                                                <MenuItem key={item.mstr_key} value={item.mstr_key}>
+                                                    {item.desc.trim()}
+                                                </MenuItem>
+                                            ))
+                                        }
+                                    </TextField>
+                                </Grid> */}
+
+
 
 
                                 <Grid item lg={6} xs={12} sm={6}>
@@ -476,7 +710,6 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                         }}
                                     />
                                 </Grid>
-
 
                                 <Grid item xs={12}>
 
@@ -556,9 +789,56 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                     />
                                 </Grid>
 
+                                {/* 
+                                <Grid item xs={12} sm={6} lg={12}>
+                                    <TextField
+                                        label=" Customer Decision / Installation Stages"
+                                        type="text"
+                                        size="small"
+                                        fullWidth
+                                        value={selectedCustStg}
+                                        onChange={(e) => { setSelectedCustStg(e.target.value) }}
+                                        select
+                                        sx={{
+                                            backgroundColor: '#fff',
+                                            '& input': {
+                                                padding: '8px',
+                                                fontSize: '0.95rem',
+                                                '&:focus': {
+                                                    backgroundColor: 'var(--focus-bg-color)'
+                                                }
+                                            }
+                                        }}
+                                        InputProps={{
+                                            endAdornment: selectedCustStg && (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent menu from opening
+                                                            setSelectedCustStg("");
+                                                        }}
+                                                    >
+                                                        <ClearIcon fontSize="small" />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    >
+
+                                        {custStgList
+                                            ?.filter(item => item?.desc?.trim()) // remove empty names
+                                            .map((item) => (
+                                                <MenuItem key={item.mstr_key} value={item.mstr_key}>
+                                                    {item.desc.trim()}
+                                                </MenuItem>
+                                            ))
+                                        }
+                                    </TextField>
+                                </Grid> */}
 
                                 <Grid item xs={12}>
-                                    <TextField
+                                    {/* <TextField
                                         label="Lead Source Location"
                                         type="text"
                                         size="small"
@@ -578,8 +858,39 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
                                         }}
                                     >
 
-                                    </TextField>
+                                    </TextField> */}
+
+                                    <Autocomplete
+                                        size="small"
+                                        fullWidth
+                                        freeSolo
+                                        options={["Kerala", "Tamil Nadu"]}
+                                        value={LeadSourceLoc || ""}
+                                        onChange={(event, newValue) => {
+                                            setLeadSourceLoc(newValue || "");
+                                        }}
+                                        onInputChange={(event, newInputValue) => {
+                                            setLeadSourceLoc(newInputValue);
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Lead Source Location"
+                                                sx={{
+                                                    backgroundColor: "#fff",
+                                                    "& input": {
+                                                        padding: "8px",
+                                                        fontSize: "0.95rem",
+                                                        "&:focus": {
+                                                            backgroundColor: "var(--focus-bg-color)",
+                                                        },
+                                                    },
+                                                }}
+                                            />
+                                        )}
+                                    />
                                 </Grid>
+
                                 {/* Bottom Right Buttons */}
                                 <Grid item xs={12} sm={12} md={12} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, alignItems: 'center' }}>
 
@@ -614,10 +925,7 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
 
             </CModal>
 
-
             {/* =========================================== */}
-
-
 
             <Dialog
                 open={validationDialogOpen}

@@ -985,10 +985,6 @@ function CustomerDetails() {
         hasData &&
         !hasActive;
 
-    // SHOW WARNING IF EVEN ONE PRODUCT IS EXPIRED / NO AMC
-    // const hasWarning =
-    //     hasData &&
-    //     amcSummary.inactive > 0;
 
     const warningProducts = React.useMemo(() => {
         return (combinedData || [])
@@ -1002,25 +998,6 @@ function CustomerDetails() {
             }));
     }, [combinedData]);
 
-    // const alertProducts = React.useMemo(() => {
-
-    //     return (combinedData || [])
-    //         .filter((row) => {
-    //             const isActive = Number(row?.Prd_AMCIsActive) === true;
-
-    //             // Skip if Active checkbox is checked
-    //             if (isActive) return false;
-
-    //             const status = getAMCStatus(row);
-
-    //             return status === "NO_AMC" || status === "EXPIRED";
-    //         })
-    //         .map((row) => ({
-    //             name: row.Productname || row.AnlzName,
-    //             status: getAMCStatus(row),
-    //             isActive: row.Prd_AMCIsActive
-    //         }));
-    // }, [combinedData]);
 
     const alertProducts = React.useMemo(() => {
 
@@ -1109,7 +1086,7 @@ function CustomerDetails() {
 
             </Grid>
 
-            <Grid container spacing={2}>
+            <Grid container spacing={1}>
 
                 {/* ----------Card 1---------- */}
 
@@ -1117,7 +1094,7 @@ function CustomerDetails() {
 
                     <Card sx={{
                         height: { xs: '150px', sm: '70px', lg: "70px" },
-                        backgroundColor: 'transparent',
+                       backgroundColor: 'transparent !important',
                         boxShadow: 'none',
                         border: '1px solid #d1d5db', // light gray border
                         borderRadius: 2,
@@ -1593,7 +1570,7 @@ function CustomerDetails() {
 
                     <Card sx={{
                         height: { xs: '1420px', sm: '405px', lg: "366px", xl: '364px' },
-                        backgroundColor: 'transparent',
+                       backgroundColor: 'transparent !important',
                         boxShadow: 'none',
                         border: '1px solid #d1d5db', // light gray border
                         borderRadius: 2,
@@ -2349,7 +2326,7 @@ function CustomerDetails() {
                 <Grid item xs={12} sm={12} lg={12}>
 
                     <Card sx={{
-                        backgroundColor: 'transparent',
+                       backgroundColor: 'transparent !important',
                         boxShadow: 'none',
                         border: '1px solid #d1d5db', // light gray border
                         borderRadius: 2,
@@ -2935,7 +2912,7 @@ function CustomerDetails() {
 
                 <Grid item sm={12} lg={12} >
                     <Card sx={{
-                        backgroundColor: 'transparent',
+                       backgroundColor: 'transparent !important',
                         boxShadow: 'none',
                         border: '1px solid #d1d5db', // light gray border
                         borderRadius: 2,
@@ -3127,7 +3104,7 @@ function CustomerDetails() {
 
                 <Grid item sm={12} lg={12}>
                     <Card sx={{
-                        backgroundColor: 'transparent',
+                       backgroundColor: 'transparent !important',
                         boxShadow: 'none',
                         border: '1px solid #d1d5db', // light gray border
                         borderRadius: 2,

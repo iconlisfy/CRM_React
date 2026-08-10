@@ -1,4 +1,4 @@
-import { Card, CardContent, Tab, Tabs, Box, Typography, Button } from '@mui/material'
+import { Card, CardContent, Tab, Tabs, Box, Typography, Button, Grid, TextField, MenuItem } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import LeadsView from './LeadsView';
 import InFollowUp from './InFollowUp';
@@ -7,6 +7,8 @@ import Leads from '../Leads/Leads';
 import AddIcon from '@mui/icons-material/Add';
 import axiosInstance from '../../../axios';
 import getReduxState from '../../../ReduxState';
+import Won from './Won';
+import Lost from './Lost';
 
 
 function CustomTabPanel({ children, value, index }) {
@@ -98,18 +100,41 @@ function LeadsMain() {
     const [selectedTab, setSelectedTab] = useState(0);
 
     const [ldViewsData, setLdViewsData] = useState([])
+    const [followUpViewsData, setFollowUpViewsData] = useState([])
+    const [wonViewsData, setWonViewsData] = useState([])
+    const [lostViewsData, setLostViewsData] = useState([])
+    const [installViewsData, setInstallViewsData] = useState([])
 
     const [allDept, setAllDept] = useState([]);
 
-
     const [allStaff, setAllStaff] = useState([]);
     const [selectedStaff, setSelectedStaff] = useState(empId);
+
+    const [searchBy, setSearchBy] = useState("Customer Name");
+    const [searchText, setSearchText] = useState("");
 
     const [selectedDept, setSelectedDept] = useState(
         isAdmin ? "All" : deptid
     );
 
-    // Fetch Leads Data
+    useEffect(() => {
+        const salesDept = allDept.find((dept) => dept.desc === "Sales");
+
+        if (salesDept && Number(deptid) === Number(salesDept.mstr_key)) {
+            setSelectedDept(String(salesDept.mstr_key)); // Login user is in Sales
+        } else {
+            setSelectedDept("All"); // Login user is not in Sales
+        }
+    }, [allDept, deptid]);
+
+    //===== Filter Data =====
+    const filterData = (data) => {
+        return data.filter((item) =>
+            item.CustomerName?.toLowerCase().includes(searchText.toLowerCase())
+        );
+    };
+
+    //===== Fetch Leads View Data =====
     const fetchData = async () => {
         try {
 
@@ -125,8 +150,31 @@ function LeadsMain() {
             console.log("Error while fetching data", error)
         }
     }
+
+    // =====Fetch Table Data =====
+    const fetchTableData = async () => {
+        try {
+
+
+            const deptValue = selectedDept === "All" ? 0 : selectedDept;
+            const staffValue = selectedStaff === "All" ? 0 : selectedStaff;
+            const fetchResponse = await axiosInstance.get(
+                `/FollowUpView/Get?userGroup=${role}&UsrId=${empId}&DeptId=${deptValue}&StaffId=${staffValue}`
+            ); if (fetchResponse.data) {
+                setFollowUpViewsData(fetchResponse.data.InFollowUp)
+                setWonViewsData(fetchResponse.data.WonLeads)
+                setLostViewsData(fetchResponse.data.LostLeads)
+                setInstallViewsData(fetchResponse.data.OnInstallation)
+            }
+        } catch (error) {
+            console.log("Error whie fetch table data", error)
+        }
+    }
+
+
     useEffect(() => {
         fetchData();
+        fetchTableData()
     }, [selectedDept, selectedStaff]);
 
     //===== Fetch Department Data =====
@@ -156,13 +204,28 @@ function LeadsMain() {
         }
     };
 
-
+    // const StaffList = selectedDept === "All"
+    //     ? allStaff
+    //     : selectedDept
+    //         ? allStaff.filter(
+    //             (staff) => Number(staff.Dept_id) === Number(selectedDept)
+    //         )
+    //         : [];
 
     const StaffList = selectedDept === "All"
-        ? allStaff
+        ? allStaff.filter(
+            (staff) =>
+                staff.DeptName === "Sales" ||
+                staff.UserGroup === "Administrator"
+        )
         : selectedDept
             ? allStaff.filter(
-                (staff) => Number(staff.Dept_id) === Number(selectedDept)
+                (staff) =>
+                    Number(staff.Dept_id) === Number(selectedDept) &&
+                    (
+                        staff.DeptName === "Sales" ||
+                        staff.UserGroup === "Administrator"
+                    )
             )
             : [];
 
@@ -190,9 +253,24 @@ function LeadsMain() {
     };
 
 
+    // const handleChange = (event, newValue) => {
+    //     if (newValue === 5) {
+    //         setSelectedTab(5);
+    //         setOpenLeadModal(true);
+    //         return;
+    //     }
 
+    //     setSelectedTab(newValue);
+    //     setValue(newValue);
+    // };
 
     const handleChange = (event, newValue) => {
+        // Reset filters
+        setSearchText("");
+        setSearchBy("Customer Name");
+        setSelectedDept("All");
+        setSelectedStaff(empId);
+
         if (newValue === 5) {
             setSelectedTab(5);
             setOpenLeadModal(true);
@@ -202,7 +280,6 @@ function LeadsMain() {
         setSelectedTab(newValue);
         setValue(newValue);
     };
-
 
 
     return (
@@ -231,55 +308,30 @@ function LeadsMain() {
                     lg: 'calc(100vh - -5px)',
                     xl: 'calc(100vh - 0px)'
                 },
-
             }}>
                 <CardContent>
-
 
                     <Tabs
                         value={selectedTab}
                         onChange={handleChange}
                         variant="fullWidth"
                         TabIndicatorProps={{ style: { display: "none" } }}
-                        // sx={{
-                        //     bgcolor: "#ffffff",
-                        //     borderRadius: "16px",
-                        //     p: "6px",
-                        //     boxShadow: "0 8px 30px rgba(15,23,42,0.08)",
-                        //     border: "1px solid rgba(226,232,240,0.9)",
-
-                        //     "& .MuiTabs-indicator": {
-                        //         display: "none",
-                        //     },
-
-                        //     // "& .MuiTabs-flexContainer": {
-                        //     //     gap: 8,
-                        //     // },
-
-
-                        // }}
-
                         sx={{
                             bgcolor: "#ffffff",
                             borderRadius: "16px",
                             p: "6px",
                             boxShadow: "0 8px 30px rgba(15,23,42,0.08)",
                             border: "1px solid rgba(226,232,240,0.9)",
-
                             "& .MuiTabs-indicator": {
                                 display: "none",
                             },
-
                             "& .MuiTabs-flexContainer": {
                                 gap: 1,
                             },
-
                             "& .MuiTabs-scroller": {
                                 overflowX: "auto !important",
                             },
                         }}
-
-
                     >
                         <Tab
                             label={
@@ -309,10 +361,118 @@ function LeadsMain() {
                             {...a11yProps(0)}
                             sx={tabStyle}
                         />
-                        <Tab label="In Follow Up" {...a11yProps(1)} sx={tabStyle} />
-                        <Tab label="On-Installation" {...a11yProps(2)} sx={tabStyle} />
-                        <Tab label="Won" {...a11yProps(3)} sx={tabStyle} />
-                        <Tab label="Lost" {...a11yProps(4)} sx={tabStyle} />
+                        <Tab
+                            label={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <span>In Follow Up</span>
+                                    <Box
+                                        sx={{
+                                            bgcolor: selectedTab === 1 ? "#fff" : "#4975db",
+                                            color: selectedTab === 1 ? "#4975db" : "#fff",
+                                            borderRadius: "50%",
+                                            minWidth: 22,
+                                            height: 22,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 700,
+                                            transition: "0.3s",
+                                        }}
+
+                                    >
+                                        {followUpViewsData?.length}
+                                    </Box>
+                                </Box>
+                            }
+                            {...a11yProps(1)}
+                            sx={tabStyle}
+                        />
+                        <Tab
+                            label={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <span>On-Installation</span>
+                                    <Box
+                                        sx={{
+                                            bgcolor: selectedTab === 2 ? "#fff" : "#4975db",
+                                            color: selectedTab === 2 ? "#4975db" : "#fff",
+                                            borderRadius: "50%",
+                                            minWidth: 22,
+                                            height: 22,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 700,
+                                            transition: "0.3s",
+                                        }}
+
+                                    >
+                                        {installViewsData?.length}
+                                    </Box>
+                                </Box>
+                            }
+                            {...a11yProps(2)}
+                            sx={tabStyle}
+                        />
+
+                        <Tab
+                            label={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <span>Won</span>
+                                    <Box
+                                        sx={{
+                                            bgcolor: selectedTab === 3 ? "#fff" : "#4975db",
+                                            color: selectedTab === 3 ? "#4975db" : "#fff",
+                                            borderRadius: "50%",
+                                            minWidth: 22,
+                                            height: 22,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 700,
+                                            transition: "0.3s",
+                                        }}
+
+                                    >
+                                        {wonViewsData?.length}
+                                    </Box>
+                                </Box>
+                            }
+                            {...a11yProps(3)}
+                            sx={tabStyle}
+                        />
+
+                        <Tab
+                            label={
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <span>Lost</span>
+                                    <Box
+                                        sx={{
+                                            bgcolor: selectedTab === 4 ? "#fff" : "#4975db",
+                                            color: selectedTab === 4 ? "#4975db" : "#fff",
+                                            borderRadius: "50%",
+                                            minWidth: 22,
+                                            height: 22,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 700,
+                                            transition: "0.3s",
+                                        }}
+
+                                    >
+                                        {lostViewsData?.length}
+                                    </Box>
+                                </Box>
+                            }
+                            {...a11yProps(4)}
+                            sx={tabStyle}
+                        />
+
+
                         <Tab
                             label={
                                 <Box display="flex" alignItems="center" gap={0.5}>
@@ -338,9 +498,185 @@ function LeadsMain() {
                         />                    </Tabs>
 
 
+
+                    <Grid container spacing={1} className='mt-1'>
+                        {isAdmin && (
+                            <>
+                                <Grid item xs={12} sm={2.5}>
+                                    <TextField
+                                        label="Department"
+                                        type="text"
+                                        select
+                                        size="small"
+                                        fullWidth
+                                        value={selectedDept}
+                                        onChange={(e) => setSelectedDept(e.target.value)}
+                                        SelectProps={{
+                                            readOnly: !isAdmin,
+                                        }}
+
+                                        sx={{
+                                            backgroundColor: "#fff",
+                                            "& input": {
+                                                padding: "8px",
+                                                fontSize: "0.95rem",
+                                                "&:focus": {
+                                                    backgroundColor: "var(--focus-bg-color)",
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem value="All">
+                                            --All--
+                                        </MenuItem>
+                                        {allDept
+                                            .filter((dept) => dept.desc === "Sales")
+                                            .map((dept) => (
+                                                <MenuItem
+                                                    key={dept.mstr_key}
+                                                    value={dept.mstr_key}
+                                                >
+                                                    {dept.desc}
+                                                </MenuItem>
+                                            ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item xs={12} sm={2.5}>
+                                    <TextField
+                                        label="Staff"
+                                        type="text"
+                                        size="small"
+                                        select
+                                        fullWidth
+                                        value={selectedStaff}
+                                        onChange={(e) => setSelectedStaff(e.target.value)}
+                                        SelectProps={{
+                                            readOnly: !isAdmin,
+                                        }}
+
+                                        sx={{
+                                            backgroundColor: "#fff",
+                                            "& input": {
+                                                padding: "8px",
+                                                fontSize: "0.95rem",
+                                                "&:focus": {
+                                                    backgroundColor: "var(--focus-bg-color)",
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <MenuItem value="All">
+                                            --All--
+                                        </MenuItem>
+
+                                        {StaffList.map((staff) => (
+                                            <MenuItem
+                                                key={staff.ahmst_key}
+                                                value={staff.ahmst_key}
+                                            >
+                                                {staff.ahmst_pname}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                            </>
+                        )}
+
+
+                        <Grid item xs={12} sm={3}>
+                            <TextField
+                                label="Search By"
+                                type="text"
+                                size="small"
+                                select
+                                fullWidth
+                                value={searchBy}
+                                onChange={(e) => setSearchBy(e.target.value)}
+                                SelectProps={{
+                                    readOnly: !isAdmin,
+                                }}
+
+                                sx={{
+                                    backgroundColor: '#fff',
+                                    fontSize: '1rem',
+                                    height: 40,
+                                    //  select text styling
+                                    '& .MuiSelect-select': {
+                                        padding: '8px',
+                                        fontSize: '0.95rem',
+                                    },
+                                    '& .MuiInputBase-input': {
+                                        borderLeft: '5px solid  #3f5483',
+                                        paddingLeft: '12px',
+                                        backgroundColor: 'var(--input-bg-color)',
+                                        padding: '8px',
+                                        fontSize: '0.95rem',
+                                    },
+                                    //  focus background
+                                    '& .MuiOutlinedInput-root.Mui-focused': {
+                                        backgroundColor: 'var(--focus-bg-color)',
+                                    },
+                                }}
+                            >
+                                <MenuItem value="Customer Name">
+                                    Customer Name
+                                </MenuItem>
+
+                            </TextField>
+                        </Grid>
+
+
+                        <Grid item xs={12} sm={3}>
+                            <TextField
+                                label=""
+                                type="text"
+                                size="small"
+
+                                fullWidth
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                SelectProps={{
+                                    readOnly: !isAdmin,
+                                }}
+
+                                sx={{
+                                    backgroundColor: '#fff',
+                                    fontSize: '1rem',
+                                    height: 40,
+                                    //  select text styling
+                                    '& .MuiSelect-select': {
+                                        padding: '8px',
+                                        fontSize: '0.95rem',
+                                    },
+                                    '& .MuiInputBase-input': {
+                                        borderLeft: '5px solid  #3f5483',
+                                        paddingLeft: '12px',
+                                        backgroundColor: 'var(--input-bg-color)',
+                                        padding: '8px',
+                                        fontSize: '0.95rem',
+                                    },
+                                    //  focus background
+                                    '& .MuiOutlinedInput-root.Mui-focused': {
+                                        backgroundColor: 'var(--focus-bg-color)',
+                                    },
+                                }}
+                            >
+
+
+                            </TextField>
+                        </Grid>
+
+                    </Grid>
+
+
+
+
                     <CustomTabPanel value={value} index={0}>
                         <LeadsView
-                            ldViewsData={ldViewsData}
+                            ldViewsData={filterData(ldViewsData)}
+
                             setLdViewsData={setLdViewsData}
                             formatDateTime={formatDateTime}
                             isAdmin={isAdmin}
@@ -350,29 +686,45 @@ function LeadsMain() {
                             selectedStaff={selectedStaff}
                             setSelectedStaff={setSelectedStaff}
                             StaffList={StaffList}
+                        // departmentList={departmentList}
 
                         />
                     </CustomTabPanel>
 
                     <CustomTabPanel value={value} index={1}>
-                        <InFollowUp />
+                        <InFollowUp
+                            isAdmin={isAdmin}
+                            followUpViewsData={filterData(followUpViewsData)}
+                            formatDateTime={formatDateTime}
+                        />
                     </CustomTabPanel>
 
                     <CustomTabPanel value={value} index={2}>
-                        <Installation />
+                        <Installation
+                            isAdmin={isAdmin}
+                            installViewsData={filterData(installViewsData)}
+                            formatDateTime={formatDateTime} />
                     </CustomTabPanel>
 
                     <CustomTabPanel value={value} index={3}>
-                        Won Content
+                        <Won
+                            isAdmin={isAdmin}
+                            wonViewsData={filterData(wonViewsData)}
+                            formatDateTime={formatDateTime} />
                     </CustomTabPanel>
 
                     <CustomTabPanel value={value} index={4}>
-                        Lost Content
+                        <Lost
+                            isAdmin={isAdmin}
+                            lostViewsData={filterData(lostViewsData)}
+                            formatDateTime={formatDateTime} />
                     </CustomTabPanel>
 
                     <CustomTabPanel value={value} index={5}>
 
                     </CustomTabPanel>
+
+
 
                 </CardContent>
             </Card>

@@ -41,6 +41,7 @@ import {
 } from '@mui/material';
 // import PersonSwapIcon from "@mui/icons-material/PersonSwap";
 import CloseIcon from "@mui/icons-material/Close";
+import { useAsyncLock } from '../../../UseAsyncLock';
 
 function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   editLead = null, }) {
@@ -51,6 +52,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   const { role, deptid, name, empId, BrnchKey, dept, branch } = getReduxState()
 
   const isAdmin = role === "Administrator";
+
+  const [isEditedState, setIsEditedState] = useState(isEdited);
 
   // State management
   const [topDateTime, setTopDateTime] = useState(new Date());
@@ -66,7 +69,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     isAdmin ? "All" : deptid
   );
 
-
+  const [withLock, isSaving] = useAsyncLock();
   const [focusField, setFocusField] = useState("");
 
   // Customer details
@@ -75,6 +78,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   const [place, setPlace] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [leadSourceLocation, setLeadSourceLocation] = useState('');
+  const [contactperson, setContactperson] = useState('')
 
   // Enquired for inputs & table
   const [product, setProduct] = useState('');
@@ -118,6 +122,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   const [transferDept, setTransferDept] = useState("");
   const [transferStaff, setTransferStaff] = useState("");
   const [transferRemarks, setTransferRemarks] = useState("");
+
+  const [selectedLead, setSelectedLead] = useState(null);
+
+  const [searchType, setSearchType] = useState("CustomerName");
 
   const CustPhnInputRef = useRef(null)
   const ProductsInputRef = useRef(null)
@@ -212,6 +220,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     setPlace(editLead.Place || "");
 
     setSelectedStaff(editLead.AssignId || "");
+    setContactperson(editLead.ContactedPerson || "");
     setSelectedLeadSource(editLead.LeadSourceId || "");
     setLeadSourceLocation(editLead.LeadLocation || "");
 
@@ -257,7 +266,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   //===== Fetch latest Lead Id =====
   const fetchLatestId = async () => {
     try {
-      const fetchResponse = await axiosInstance.get(`LeadSaveUpdateAPI/GetLeadNo`)
+      const fetchResponse = await axiosInstance.get(`LeadSaveUpdateAPI/GetLeadNo?BrId=${BrnchKey}`)
 
 
       if (fetchResponse.data && fetchResponse.data.next_LeadNo)
@@ -266,6 +275,75 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       console.log("Error while fetching latestId", error)
     }
   }
+
+
+  const [searchInput, setSearchInput] = useState("");
+  const [lead, setLead] = useState([])
+
+  const getLead = async (selectedLeadCode) => {
+    try {
+      // setLoading(true);
+
+      const res = await axiosInstance.get(
+        `/LeadSaveUpdateAPI/LeadData?LeadCode=${selectedLeadCode}`
+      );
+
+      if (res.data.status) {
+        const data = res.data.data;
+
+        // Mark as edit mode
+        setIsEditedState(true);
+
+        setLead(data);
+
+        setLeadId(data.LeadKey || "");
+        setTopDateTime(
+          data.LeadDate ? new Date(data.LeadDate) : new Date()
+        );
+
+        setCustomerPhone(data.CustomerPhone || "");
+        setCustomerName(data.CustomerName || "");
+        setPlace(data.Place || "");
+
+        setSelectedStaff(data.AssignId || "");
+        setContactperson(data.ContactedPerson || "");
+
+        setSelectedLeadSource(data.LeadSourceId || "");
+        setLeadSourceLocation(data.LeadLocation || "");
+
+        setRemarks(data.Remarks || "");
+
+        setFollowUpRequired(data.IsFollowUpReq || false);
+
+        setFollowUpDateTime(
+          data.FollowUpDate
+            ? new Date(data.FollowUpDate)
+            : new Date()
+        );
+
+        setSelectedLeadType(data.LeadTypeId || "");
+        setSelectedLeadQuality(data.LeadQualityId || "");
+
+        setDoubtfulLead(data.IsDoubtFull || false);
+
+        setEnquiredItems(
+          (data.Products || []).map((item, index) => ({
+            id: item.EnquiryId || index + 1,
+            productKey: item.ProductId,
+            enquiryId: item.EnquiryId,
+            product: item.Product,
+            note: item.Note,
+            qty: item.Quantity,
+            value: item.Rate,
+          }))
+        );
+      }
+    } catch (err) {
+      console.log("Error fetching lead:", err);
+      // } finally {
+      //     setLoading(false);
+    }
+  };
 
   //===== Add Item to Enquired Table =====
   const handleAddItem = () => {
@@ -343,37 +421,62 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   };
 
   //===== Reset Function ======
+
   const handleNew = () => {
+    // =========================
     // Header
+    // =========================
     setLeadId("");
-    fetchLatestId();
     setTopDateTime(new Date());
 
-    // Customer Details
-    setCustomerPhone("");
-    setCustomerName("");
-    setPlace("");
-    setSelectedStaff(isAdmin ? "" : empId);
-    setSelectedLeadSource("");
-    setLeadSourceLocation("");
+    // Get a fresh Lead ID
+    fetchLatestId();
 
-    // Product Details
-    setSelectedProduct(null);
-    setProductSearch("");
-    setNote("");
-    setQty("");
-    setValue("");
+    // =========================
+    // Search
+    // =========================
+    setSearchInput("");
+    setSearchType("CustomerName");
+    setSelectedLead(null);
+    setLead([]);
 
-    // Editing States
+    // =========================
+    // Edit State
+    // =========================
+    setIsEditedState(false);
     setIsEditing(false);
     setEditingRowId(null);
     setSelectedRow(null);
     setUpdateDialogOpen(false);
 
-    // Table
+    // =========================
+    // Customer Details
+    // =========================
+    setCustomerPhone("");
+    setCustomerName("");
+    setContactperson("");
+    setPlace("");
+
+    // =========================
+    // Assignment / Lead Source
+    // =========================
+    setSelectedStaff(isAdmin ? "" : empId);
+    setSelectedLeadSource("");
+    setLeadSourceLocation("");
+
+    // =========================
+    // Product Details
+    // =========================
+    setSelectedProduct(null);
+    setProductSearch("");
+    setNote("");
+    setQty("");
+    setValue("");
     setEnquiredItems([]);
 
-    // Remarks
+    // =========================
+    // Remarks / Follow Up
+    // =========================
     setRemarks("");
     setFollowUpRequired(false);
     setFollowUpDateTime(new Date());
@@ -381,10 +484,30 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     setSelectedLeadQuality("");
     setDoubtfulLead(false);
 
-    // Delete Dialog
+    // =========================
+    // Phone validation
+    // =========================
+    setPhoneExists(false);
+
+    // =========================
+    // Transfer
+    // =========================
+    setTransferDept("");
+    setTransferStaff("");
+    setTransferRemarks("");
+    setOpenTransferModal(false);
+
+    // =========================
+    // Delete / Validation dialogs
+    // =========================
     setDeleteDialogOpen(false);
     setDeleteItemId(null);
+
+    setValidationDialogOpen(false);
+    setValidationMessage("");
+    setFocusField("");
   };
+
 
   //===== Fetch Products Data =====
   const fetchProducts = async () => {
@@ -439,7 +562,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   };
 
-
   //===== Fetch Staff Data =====
   const fetchStaff = async () => {
     try {
@@ -447,12 +569,24 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
       const staffData = res?.data?.staff;
 
-      setAllStaff(Array.isArray(staffData) ? staffData : []);
+      if (Array.isArray(staffData)) {
+        const filteredStaff = staffData.filter(
+          (staff) =>
+            staff.DeptName?.toLowerCase() === "sales" ||
+            staff.UserGroup?.toLowerCase() === "administrator"
+        );
+
+        setAllStaff(filteredStaff);
+      } else {
+        setAllStaff([]);
+      }
     } catch (err) {
       console.log("Error fetching staff", err);
       setAllStaff([]);
     }
   };
+
+
 
   const filteredStaff = (() => {
 
@@ -524,7 +658,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   //====== Log Desc==========
   const getUpdateLogDescription = () => {
 
-    if (!isEdited || !editLead) return "";
+    if (!isEditedState || (!editLead && !lead)) return "";
 
     const changes = [];
 
@@ -585,82 +719,83 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   };
 
   //===== Save / Update Function =====
-  const handleSaveUpdate = async () => {
+  const handleSaveUpdate = () => {
+    withLock(async () => {
 
-
-    if (!customerPhone.trim()) {
-      setValidationMessage("Please Enter Customer PhnNo");
-      setValidationDialogOpen(true);
-      setFocusField('CustPhn')
-      return;
-    }
-
-    try {
-      const requestData = {
-        IsEdited: isEdited,
-        LeadKey: editLead?.LeadKey || '',
-        LeadCode: editLead?.LeadCode || generateLeadId(leadId),
-        LeadDate: format(topDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
-        CustPhNo: customerPhone,
-        CustName: customerName,
-        Place: place,
-        AssignTo: selectedStaff,
-        LeadSourceId: selectedLeadSource,
-        LeadLocation: leadSourceLocation,
-        Remarks: remarks,
-        IsFollowUpReq: followUpRequired,
-        LeadTypeId: selectedLeadType,
-        IsDoubtFull: doubtfulLead,
-        FollowUpDate: followUpRequired
-          ? format(followUpDateTime, "yyyy-MM-dd'T'HH:mm:ss")
-          : null,
-        DeptId: deptid,
-        LeadQuality: selectedLeadQuality,
-        UserInfo: name,
-        Products: enquiredItems.map((item) => ({
-          EnquiryId: isEdited ? item.enquiryId : '', // or null if your API expects null
-          Product: item.product,
-          ProductId: item.productKey,
-          Note: item.note,
-          Quantity: Number(item.qty || 0),
-          Rate: Number(item.value || 0),
-          UserInfo: name,
-        })),
-
-
-        // Pass only while editing
-        ...(isEdited && {
-          logReason: "Lead Updated",
-          logDesc: getUpdateLogDescription(),
-          logForm: "Lead Entry",
-          logUser: name,
-          logUserId: empId,
-        }),
-      };
-
-      console.log("Request", requestData);
-
-      const response = await axiosInstance.post(
-        "/LeadSaveUpdateAPI/LeadSaveUpdate",
-        requestData
-      );
-
-      console.log(response.data);
-
-      if (response.data.status === true) {
-        toast.success(isEdited ? "Updated Successfully" : "Saved Successfully");
-      } else {
-        toast.error(response.data.message);
+      if (!customerPhone.trim()) {
+        setValidationMessage("Please Enter Customer PhnNo");
+        setValidationDialogOpen(true);
+        setFocusField('CustPhn')
+        return;
       }
 
-      handleNew();
-      setOpenLeadModal(false)
-    } catch (error) {
-      console.error("Error saving lead", error);
-      toast.error("Failed to save lead");
-    }
-  };
+      try {
+        const requestData = {
+          IsEdited: isEditedState,
+          LeadKey: editLead?.LeadKey || lead?.LeadKey || '',
+          LeadCode: editLead?.LeadCode || generateLeadId(leadId),
+          LeadDate: format(topDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
+          CustPhNo: customerPhone,
+          CustName: customerName,
+          Place: place,
+          AssignTo: selectedStaff,
+          LeadSourceId: selectedLeadSource,
+          LeadLocation: leadSourceLocation,
+          Remarks: remarks,
+          IsFollowUpReq: followUpRequired,
+          LeadTypeId: selectedLeadType,
+          IsDoubtFull: doubtfulLead,
+          FollowUpDate: followUpRequired
+            ? format(followUpDateTime, "yyyy-MM-dd'T'HH:mm:ss")
+            : null,
+          DepartmentId: deptid,
+          LeadQuality: selectedLeadQuality,
+          UserInfo: name,
+          ContactedPerson: contactperson,
+          Products: enquiredItems.map((item) => ({
+            EnquiryId: isEdited ? item.enquiryId : '', // or null if your API expects null
+            Product: item.product,
+            ProductId: item.productKey,
+            Note: item.note,
+            Quantity: Number(item.qty || 0),
+            Rate: Number(item.value || 0),
+            UserInfo: name,
+          })),
 
+
+          // Pass only while editing
+          ...(isEdited && {
+            logReason: "Lead Updated",
+            logDesc: getUpdateLogDescription(),
+            logForm: "Lead Entry",
+            logUser: name,
+            logUserId: empId,
+          }),
+        };
+
+        console.log("RequestData", requestData);
+
+        const response = await axiosInstance.post(
+          "/LeadSaveUpdateAPI/LeadSaveUpdate",
+          requestData
+        );
+
+        console.log(response.data);
+
+        if (response.data.status === true) {
+          toast.success(isEditedState ? "Updated Successfully" : "Saved Successfully");
+        } else {
+          toast.error(response.data.message);
+        }
+
+        handleNew();
+        setOpenLeadModal(false)
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to save lead");
+      }
+    });
+  };
   // ===== Lead Transfer ======
   const handleTransfer = async () => {
 
@@ -720,6 +855,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       toast.error("Transfer failed");
     }
   };
+
 
   return (
 
@@ -781,16 +917,231 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         <CModalBody classmstName='c-modal-body no-scroll '
           style={{
             zoom: "0.8",
+            // maxHeight: "80vh",      overflowY: "auto",
             background:
               "linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #dbeafe 100%)",
           }}>
 
 
-          <Box >
-
+          <Box>
 
             {/* Main Form Grid */}
             <Grid container spacing={1}>
+
+              <Grid item xs={12} >
+
+                <Card sx={{
+                  backgroundColor: 'transparent !important',
+                  boxShadow: 'none',
+
+                  border: '1px solid #d1d5db', // light gray border   // darker, more visible gray
+                  borderRadius: 2,
+                  height: { xs: '160px', sm: '75px' }
+                }}>
+                  <CardContent>
+                    <Grid container spacing={1}>
+
+                      <Grid item xs={12} sm={5}>
+                        <TextField
+                          label="Search Item"
+                          size="small"
+                          fullWidth
+                          select
+                          value={searchType}
+                          onChange={(e) => setSearchType(e.target.value)}
+
+                          sx={{
+                            backgroundColor: '#fff',
+                            fontSize: '1rem',
+                            height: 40,
+                            //  select text styling
+                            '& .MuiSelect-select': {
+                              padding: '8px',
+                              fontSize: '0.95rem',
+                            },
+                            '& .MuiInputBase-input': {
+                              borderLeft: '5px solid  #3f5483',
+                              paddingLeft: '12px',
+                              backgroundColor: 'var(--input-bg-color)',
+                              padding: '8px',
+                              fontSize: '0.95rem',
+                            },
+                            //  focus background
+                            '& .MuiOutlinedInput-root.Mui-focused': {
+                              backgroundColor: 'var(--focus-bg-color)',
+                            },
+                          }}
+                        >
+                          <MenuItem value="CustomerName">Customer Name</MenuItem>
+                          <MenuItem value="CustomerPhone">Customer Phone</MenuItem>                        </TextField>
+                      </Grid>
+
+                      {/* Row 2: Customer Phone & Name */}
+                      <Grid item xs={12} sm={7}>
+
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          options={leadsFullData || []}
+
+                          // Controls the selected customer
+                          value={selectedLead || null}
+
+                          // Controls the text inside the search box
+                          inputValue={searchInput}
+
+                          getOptionLabel={(option) =>
+                            option?.CustomerName || ""
+                          }
+
+                          onInputChange={(event, value, reason) => {
+                            setSearchInput(value);
+
+                            // Clear selected customer when search is cleared
+                            if (reason === "clear") {
+                              setSelectedLead(null);
+                            }
+                          }}
+
+                          filterOptions={(options, { inputValue }) => {
+                            const search = inputValue.toLowerCase().trim();
+
+                            if (!search) return options;
+
+                            if (searchType === "CustomerName") {
+                              return options.filter((lead) =>
+                                lead.CustomerName
+                                  ?.toLowerCase()
+                                  .includes(search)
+                              );
+                            }
+
+                            if (searchType === "CustomerPhone") {
+                              return options.filter((lead) =>
+                                String(lead.CustomerPhone || "")
+                                  .includes(search)
+                              );
+                            }
+
+                            return options;
+                          }}
+
+                          onChange={(event, selectedCustomer) => {
+                            setSelectedLead(selectedCustomer);
+
+                            if (!selectedCustomer) return;
+
+                            const leadCode = selectedCustomer.LeadCode;
+
+                            // console.log("Selected Customer:", selectedCustomer);
+                            // console.log("Selected LeadCode:", leadCode);
+
+                            getLead(leadCode);
+                          }}
+
+                          renderOption={(props, option) => (
+                            <li {...props}>
+                              <Box sx={{ width: "100%", py: 0.5 }}>
+
+                                {/* Customer Name */}
+                                <Typography
+                                  fontWeight={600}
+                                  fontSize={14}
+                                >
+                                  {highlightText(
+                                    option.CustomerName || "",
+                                    searchInput
+                                  )}
+                                </Typography>
+
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    mt: 0.5,
+                                  }}
+                                >
+
+                                  {/* Phone */}
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    Phone:{" "}
+                                    {highlightText(
+                                      String(option.CustomerPhone || ""),
+                                      searchInput
+                                    )}
+                                  </Typography>
+
+                                  {/* Lead ID */}
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 600,
+                                      color: "#555",
+                                    }}
+                                  >
+                                    ID: {option.LeadCode}
+                                  </Typography>
+
+                                </Box>
+                              </Box>
+                            </li>
+                          )}
+
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label={`Search ${searchType}`}
+                              size="small"
+                              sx={{
+                                backgroundColor: '#fff',
+                                '& .MuiOutlinedInput-root':
+                                {
+                                  height: 39, paddingLeft: 0,
+                                  position: 'relative',
+                                  '& .MuiInputBase-input'
+                                    : {
+                                    fontSize: '0.95rem',
+                                    padding: '8px 8px 8px 12px',
+                                    position: 'relative',
+                                    zIndex: 1,
+                                  }, '&::before':
+                                  {
+                                    content: '""',
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: '5px',
+                                    backgroundColor: '#3f5483',
+                                    borderTopLeftRadius: '6px',
+                                    borderBottomLeftRadius: '6px',
+                                    zIndex: 2,
+                                  },
+                                  '&.Mui-focused':
+                                  {
+                                    backgroundColor:
+                                      'var(--focus-bg-color) !important',
+                                  },
+                                  //     '&.Mui-focused fieldset':
+                                  //         { borderColor: '#DC3545', },
+                                },
+                              }}
+                            />
+                          )}
+                        />
+
+
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+
               {/* Customer & Lead Source Details Card */}
               <Grid item xs={12} >
                 <Card
@@ -800,12 +1151,13 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
                     border: '1px solid #d1d5db', // light gray border   // darker, more visible gray
                     borderRadius: 2,
+                    height: { xs: '460px', sm: '165px' }
                   }}
                 >
                   <CardContent sx={{
                     backgroundColor: 'transparent',
                   }}>
-                    <Grid container spacing={1.5}>
+                    <Grid container spacing={1.3}>
                       {/* Row 1: Date Time Picker (Left) & Lead Id (Right) */}
                       <Grid item xs={12} sm={6}>
                         <Box sx={{ maxWidth: 300 }}>
@@ -889,14 +1241,14 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           }}
                         />
                       </Grid>
-                           <Grid item xs={12} sm={3}>
+                      <Grid item xs={12} sm={3}>
                         <TextField
                           label="Contacted Person"
                           type="text"
                           size="small"
                           fullWidth
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
+                          value={contactperson}
+                          onChange={(e) => setContactperson(e.target.value)}
                           sx={{
                             backgroundColor: '#fff',
                             '& input': {
@@ -931,8 +1283,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                         />
                       </Grid>
 
-                      
-                 
+
+
 
                       {/* Row 3: Place, Assign to, Lead Source, Lead Source location */}
                       <Grid item xs={12} sm={6} md={3}>
@@ -1015,7 +1367,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                       </Grid>
 
                       <Grid item xs={12} sm={6} md={3}>
-                        <TextField
+                        {/* <TextField
                           label="Lead Source Location"
                           type="text"
                           size="small"
@@ -1032,6 +1384,37 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                               }
                             }
                           }}
+                        /> */}
+
+
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          freeSolo
+                          options={["Kerala", "Tamil Nadu"]}
+                          value={leadSourceLocation || ""}
+                          onChange={(event, newValue) => {
+                            setLeadSourceLocation(newValue || "");
+                          }}
+                          onInputChange={(event, newInputValue) => {
+                            setLeadSourceLocation(newInputValue);
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Lead Source Location"
+                              sx={{
+                                backgroundColor: "#fff",
+                                "& input": {
+                                  padding: "8px",
+                                  fontSize: "0.95rem",
+                                  "&:focus": {
+                                    backgroundColor: "var(--focus-bg-color)",
+                                  },
+                                },
+                              }}
+                            />
+                          )}
                         />
                       </Grid>
                     </Grid>
@@ -1045,15 +1428,15 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                   sx={{
                     backgroundColor: 'transparent !important',
                     boxShadow: 'none',
-
                     border: '1px solid #d1d5db', // light gray border   // darker, more visible gray
                     borderRadius: 2,
+                    height: { xs: '490px', sm: '265px' }
                   }}
                 >
                   <CardContent>
                     <Grid container spacing={1}>
                       <Grid item xs={12}>
-                        <Typography variant="subtitle1" sx={{ color: '#4F46E5', fontWeight: 600, }}>
+                        <Typography variant="subtitle1" sx={{ color: '#4F46E5', fontWeight: 600, marginTop: '-5px' }}>
                           Enquired for
                         </Typography>
                       </Grid>
@@ -1230,11 +1613,11 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           component={Paper}
                           sx={{
                             height: {
-                              xs: 'calc(100vh - 400px)',
+                              xs: '240px',
                               sm: 'calc(100vh - 550px)',
-                              md: '170px',
-                              lg: '170px',
-                              xl: '170px'
+                              md: '150px',
+                              lg: '150px',
+                              xl: '150px'
                             },
                             width: '100%',
                             overflowX: 'auto',
@@ -1314,7 +1697,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           size="small"
                           fullWidth
                           multiline
-                          rows={2}
+                          rows={1}
                           value={remarks}
                           onChange={(e) => setRemarks(e.target.value)}
                           sx={{
@@ -1512,6 +1895,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
                         <Button
                           onClick={handleSaveUpdate}
+                          disabled={isSaving}
                           variant="contained"
                           sx={{
                             textTransform: 'none',

@@ -67,6 +67,8 @@ function LeadDetails() {
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    console.log("lead",lead)
+
     useEffect(() => {
         getLead();
     }, [leadCode]);
@@ -78,7 +80,7 @@ function LeadDetails() {
                 `/LeadSaveUpdateAPI/LeadData?LeadCode=${leadCode}`
             );
             if (res.data.status) {
-                setLead(res.data.data[0]);
+                setLead(res.data.data);
             }
         }
         catch (err) {

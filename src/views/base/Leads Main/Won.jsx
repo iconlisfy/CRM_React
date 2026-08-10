@@ -1,21 +1,14 @@
 import { Card, CardContent, Grid, Paper, Table, MenuItem, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip } from '@mui/material'
-import React, { useEffect, useState } from 'react'
-import axiosInstance from '../../../axios'
-import { useNavigate } from 'react-router-dom';
-import getReduxState from '../../../ReduxState';
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 
-function LeadsView({ ldViewsData, setLdViewsData, formatDateTime, isAdmin, selectedDept, setSelectedDept,
-    selectedStaff, setSelectedStaff, StaffList, allDept
-}) {
-    const navigate = useNavigate();
+function Won({ isAdmin, wonViewsData, formatDateTime }) {
 
-
+    const navigate = useNavigate()
 
     return (
         <>
             <Grid container spacing={1}>
-
-
                 <Grid item xs={12}>
 
                     <TableContainer
@@ -55,12 +48,12 @@ function LeadsView({ ldViewsData, setLdViewsData, formatDateTime, isAdmin, selec
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {ldViewsData && ldViewsData.length > 0 ? (
-                                    ldViewsData.map((row, index) => (
+                                {wonViewsData && wonViewsData.length > 0 ? (
+                                    wonViewsData.map((row, index) => (
                                         <TableRow key={row.LeadKey} sx={{
                                             height: 50, // Increase row height
                                         }}>
-                                            <TableCell sx={{ fontSize: '0.95rem' }}>{ldViewsData.length - index}</TableCell>
+                                            <TableCell sx={{ fontSize: '0.95rem' }}>{wonViewsData.length - index}</TableCell>
 
                                             <TableCell sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.95rem' }}>
                                                 {new Date(row.LeadDate).toLocaleDateString("en-GB", {
@@ -164,11 +157,11 @@ function LeadsView({ ldViewsData, setLdViewsData, formatDateTime, isAdmin, selec
                         </Table>
                     </TableContainer>
 
-                </Grid>
 
+                </Grid>
             </Grid>
         </>
     )
 }
 
-export default LeadsView
+export default Won
