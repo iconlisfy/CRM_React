@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -10,7 +10,7 @@ import {
   Chip,
   FormControl,
   InputLabel,
-  Select,
+  Select, MenuItem
 } from "@mui/material";
 
 import {
@@ -28,12 +28,9 @@ import {
 } from "@mui/icons-material";
 import { PersonOffOutlined } from "@mui/icons-material";
 import getReduxState from "../../ReduxState";
+import axiosInstance from "../../axios";
 
-
-// ============================================================
 // CRM COLORS
-// ============================================================
-
 const CRM_COLORS = {
   primary: "#294477",
   primaryLight: "#E8EEF9",
@@ -60,11 +57,7 @@ const CRM_COLORS = {
   border: "#E2E8F0",
 };
 
-
-// ============================================================
 // FOLLOW-UP STATUS DATA
-// ============================================================
-
 const followUpSummary = [
   {
     title: "Initial Contact Pending",
@@ -103,11 +96,7 @@ const followUpSummary = [
   },
 ];
 
-
-// ============================================================
 // UPCOMING FOLLOW-UPS
-// ============================================================
-
 const upcomingFollowUps = [
   {
     customer: "ABC Technologies",
@@ -139,29 +128,7 @@ const upcomingFollowUps = [
   },
 ];
 
-
-const getGreeting = () => {
-  const hour = new Date().getHours();
-
-  if (hour < 12) {
-    return "Good morning";
-  }
-
-  if (hour < 17) {
-    return "Good afternoon";
-  }
-
-  if (hour < 21) {
-    return "Good evening";
-  }
-
-  return "Good night";
-};
-
-// ============================================================
 // KPI CARD
-// ============================================================
-
 const KpiCard = ({
   title,
   value,
@@ -169,7 +136,6 @@ const KpiCard = ({
   color,
   lightColor,
   growth,
-  // subtitle = "vs last month",
 }) => {
   return (
     <Card
@@ -409,11 +375,18 @@ const Dashboard = () => {
   // Calculate total from actual follow-up data
   // --------------------------------------------------------
 
+  const { role, deptid, name, empId, BrnchKey, dept, branch } = getReduxState()
+
+  const isAdmin = role === "Administrator";
+
+  const [allStaff, setAllStaff] = useState([]);
+  const [selectedStaff, setSelectedStaff] = useState(empId);
+  const [dashBoardData, setDashBoardData] = useState([])
+
   const totalFollowUps = followUpSummary.reduce(
     (total, item) => total + item.value,
     0
   );
-  const { name } = getReduxState()
 
   const wonCount = 12;
   const lostCount = 7;
@@ -425,6 +398,94 @@ const Dashboard = () => {
       )
       : 0;
 
+  //===== Fetch Staff Data =====
+  const fetchStaff = async () => {
+    try {
+      const res = await axiosInstance.get("/AcctMstStaffAPI/GetAll");
+
+      const staffData = res?.data?.staff;
+
+      if (Array.isArray(staffData)) {
+        const filteredStaff = staffData.filter(
+          (staff) =>
+            staff.DeptName?.toLowerCase() === "sales" ||
+            staff.UserGroup?.toLowerCase() === "administrator"
+        );
+
+        setAllStaff(filteredStaff);
+      } else {
+        setAllStaff([]);
+      }
+    } catch (err) {
+      console.log("Error fetching staff", err);
+      setAllStaff([]);
+    }
+  }
+
+  //===== Fetch Dashboard Data =====
+  const fetchData = async () => {
+    try {
+      const filterEmpId =
+        selectedStaff === "All" ? 0 : selectedStaff;
+
+      const fetchResponse = await axiosInstance.get(
+        `DashboardAPI/Dashboard?EmpId=${empId}&UsrGrp=${role}&FilterEmpId=${filterEmpId}`);
+
+      const data = fetchResponse?.data?.data;
+
+      const formattedData = {
+        ...data,
+
+        UpcomingFollowups: Array.isArray(data?.UpcomingFollowups)
+          ? data.UpcomingFollowups.map((item) => ({
+            ...item,
+
+            customer: item.CustomerName || "",
+            // staff: item.StaffName || "",
+            date: item.NextFollowUp_Date
+              ? new Date(item.NextFollowUp_Date).toLocaleDateString("en-IN")
+              : "",
+            time: item.NextFollowUp_Date
+              ? new Date(item.NextFollowUp_Date).toLocaleTimeString(
+                "en-IN",
+                {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }
+              )
+              : "",
+            status: item.FollowUp_StatusName || "",
+          }))
+          : [],
+      };
+
+      setDashBoardData(formattedData);
+
+      console.log("fetchResponse", fetchResponse);
+    } catch (error) {
+      console.error("Error while fetching dashboard data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedStaff, empId, role]);
+
+  useEffect(() => {
+    fetchStaff()
+  }, [])
+
+  const formatFollowUpDate = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
   return (
     <Box
@@ -494,67 +555,77 @@ const Dashboard = () => {
 
           {/* STAFF - ADMIN ONLY */}
 
-          {/* {isAdmin && ( */}
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 170,
+          {isAdmin && (
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 220,
 
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "9px",
-                backgroundColor: "#fff",
-                fontSize: 12,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "9px",
+                  backgroundColor: "#fff",
+                  fontSize: 14,
 
-                "& fieldset": {
-                  borderColor:
-                    CRM_COLORS.border,
+                  "& fieldset": {
+                    borderColor: CRM_COLORS.border,
+                  },
+
+                  "&:hover fieldset": {
+                    borderColor: CRM_COLORS.primary,
+                  },
+
+                  "&.Mui-focused fieldset": {
+                    borderColor: CRM_COLORS.primary,
+                  },
                 },
 
-                "&:hover fieldset": {
-                  borderColor:
-                    CRM_COLORS.primary,
+                "& .MuiInputLabel-root": {
+                  fontSize: 14,
                 },
 
-                "&.Mui-focused fieldset": {
-                  borderColor:
-                    CRM_COLORS.primary,
+                "& .MuiSelect-select": {
+                  minHeight: "20px",
+                  padding: "9px 14px",
+                  fontSize: 14,
                 },
-              },
-
-              "& .MuiInputLabel-root": {
-                fontSize: 12,
-              },
-            }}
-          >
-
-            <InputLabel>
-              Staff
-            </InputLabel>
-
-            <Select
-              // value={selectedStaff}
-              label="Staff"
-            // onChange={(e) =>
-            //     setSelectedStaff(e.target.value)
-            // }
+              }}
             >
+              <InputLabel>Staff</InputLabel>
 
-              {/* {staffList.map((staff) => (
-                        <MenuItem
-                            key={staff.empId}
-                            value={staff.empId}
-                            sx={{
-                                fontSize: 12,
-                            }}
-                        >
-                            {staff.name} */}
-              {/* </MenuItem>
-                    ))} */}
+              <Select
+                value={selectedStaff}
+                onChange={(e) => setSelectedStaff(e.target.value)}
+                label="Staff"
+              >
 
-            </Select>
 
-          </FormControl>
-          {/* )} */}
+                {/* ALL OPTION */}
+                <MenuItem
+                  value="All"
+                  sx={{
+                    fontSize: 14,
+                    py: 1,
+                    fontWeight: 600,
+                  }}
+                >
+                  --All--
+                </MenuItem>
+
+                {allStaff.map((staff) => (
+                  <MenuItem
+                    key={staff.ahmst_key}
+                    value={staff.ahmst_key}
+                    sx={{
+                      fontSize: 14,
+                      py: 1,
+                    }}
+                  >
+                    {staff.ahmst_pname}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
 
           {/* DATE */}
@@ -610,8 +681,7 @@ const Dashboard = () => {
 
           <KpiCard
             title="Today's Leads"
-            value="189"
-            // growth="+12.5%"
+            value={dashBoardData?.LeadCountTdy}
             color={CRM_COLORS.primary}
             lightColor={
               CRM_COLORS.primaryLight
@@ -630,8 +700,7 @@ const Dashboard = () => {
 
           <KpiCard
             title="Today's Follow-ups"
-            value="42"
-            // growth="+8.2%"
+            value={dashBoardData?.LeadFollowupTdy}
             color={CRM_COLORS.orange}
             lightColor={
               CRM_COLORS.orangeLight
@@ -650,8 +719,7 @@ const Dashboard = () => {
 
           <KpiCard
             title="Won"
-            value="27"
-            // growth="+15.4%"
+            value={dashBoardData?.LeadfollowupWonTdy}
             color={CRM_COLORS.green}
             lightColor={
               CRM_COLORS.greenLight
@@ -670,7 +738,7 @@ const Dashboard = () => {
 
           <KpiCard
             title="Lost"
-            value="12"
+            value={dashBoardData?.LeadfollowupLostTdy}
             color={CRM_COLORS.red}
             lightColor={CRM_COLORS.redLight}
             icon={
@@ -700,42 +768,39 @@ const Dashboard = () => {
         {/* ================================================= */}
 
         <Grid item xs={12} md={7}>
-
           <Card
             elevation={0}
             sx={{
-              mt: 1.8,
+              height: "410px",
               borderRadius: "15px",
-              border:
-                `1px solid ${CRM_COLORS.border}`,
+              border: `1px solid ${CRM_COLORS.border}`,
+              overflow: "hidden",
             }}
           >
-
             <CardContent
               sx={{
                 p: "20px !important",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
-
+              {/* HEADER */}
+              {/* HEADER */}
               <Box
                 sx={{
                   display: "flex",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  justifyContent:
-                    "space-between",
-
                   mb: 1.5,
                 }}
               >
-
                 <Box>
-
                   <Typography
                     sx={{
                       fontSize: 15,
                       fontWeight: 700,
-                      color:
-                        CRM_COLORS.text,
+                      color: CRM_COLORS.text,
                     }}
                   >
                     Upcoming Follow-ups
@@ -744,255 +809,234 @@ const Dashboard = () => {
                   <Typography
                     sx={{
                       fontSize: 11,
-                      color:
-                        CRM_COLORS.secondaryText,
+                      color: CRM_COLORS.secondaryText,
                       mt: 0.3,
                     }}
                   >
                     Next customer activities
                   </Typography>
-
                 </Box>
 
-
+                {/* FOLLOW-UP COUNT */}
                 <Box
                   sx={{
-                    px: 1.2,
-                    py: 0.6,
-                    borderRadius: "7px",
-                    backgroundColor:
-                      CRM_COLORS.primaryLight,
-                    cursor: "pointer",
+                    minWidth: 52,
+                    height: 42,
+                    px: 1,
+                    borderRadius: "10px",
+                    backgroundColor: CRM_COLORS.primaryLight,
+                    border: `1px solid ${CRM_COLORS.primary}25`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-
                   <Typography
                     sx={{
-                      fontSize: 10,
+                      fontSize: 15,
                       fontWeight: 700,
-                      color:
-                        CRM_COLORS.primary,
+                      lineHeight: 1,
+                      color: CRM_COLORS.primary,
                     }}
                   >
-                    View all
+                    {dashBoardData?.UpcomingFollowups?.length ?? 0}
                   </Typography>
 
                 </Box>
-
               </Box>
 
-
               <Divider />
+              {/* SCROLLABLE LIST */}
 
+              <Box
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
 
-              {upcomingFollowUps.map(
-                (item, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent:
-                        "space-between",
+                  // Hide scrollbar
+                  scrollbarWidth: "none",
 
-                      py: 1.5,
-
-                      borderBottom:
-                        index !==
-                          upcomingFollowUps.length -
-                          1
-                          ? "1px solid #F0F2F5"
-                          : "none",
-                    }}
-                  >
-
-                    {/* CUSTOMER */}
-
+                  "&::-webkit-scrollbar": {
+                    display: "none",
+                  },
+                }}
+              >
+                {dashBoardData?.UpcomingFollowups?.length > 0 ? (
+                  dashBoardData.UpcomingFollowups.map((item, index) => (
                     <Box
+                      key={index}
                       sx={{
-                        display: "flex",
-                        alignItems:
-                          "center",
-                        gap: 1.2,
-                        minWidth: 0,
+                        display: "grid",
+                        gridTemplateColumns: "1fr 120px 120px",
+                        alignItems: "center",
+                        gap: 1.5,
+                        py: 1.5,
+
+                        borderBottom:
+                          index !==
+                            (dashBoardData?.UpcomingFollowups?.length || 0) - 1
+                            ? "1px solid #F0F2F5"
+                            : "none",
                       }}
                     >
-
+                      {/* CUSTOMER */}
                       <Box
                         sx={{
-                          width: 35,
-                          height: 35,
-                          borderRadius:
-                            "10px",
-
-                          backgroundColor:
-                            index % 2 === 0
-                              ? CRM_COLORS.primaryLight
-                              : CRM_COLORS.greenLight,
-
-                          color:
-                            index % 2 === 0
-                              ? CRM_COLORS.primary
-                              : CRM_COLORS.green,
-
                           display: "flex",
-                          alignItems:
-                            "center",
-                          justifyContent:
-                            "center",
-
-                          fontSize: 12,
-                          fontWeight: 700,
+                          alignItems: "center",
+                          gap: 1.2,
+                          minWidth: 0,
                         }}
                       >
-                        {item.customer
-                          .charAt(0)
-                          .toUpperCase()}
+                        <Box
+                          sx={{
+                            width: 35,
+                            height: 35,
+                            minWidth: 35,
+                            borderRadius: "10px",
+
+                            backgroundColor:
+                              index % 2 === 0
+                                ? CRM_COLORS.primaryLight
+                                : CRM_COLORS.greenLight,
+
+                            color:
+                              index % 2 === 0
+                                ? CRM_COLORS.primary
+                                : CRM_COLORS.green,
+
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+
+                            fontSize: 13,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {(item.CustomerName || "N").charAt(0).toUpperCase()}
+                        </Box>
+
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            sx={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "#344054",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {item.CustomerName || "Unknown Customer"}
+                          </Typography>
+                        </Box>
                       </Box>
 
-
-                      <Box>
-
+                      {/* DATE */}
+                      <Box sx={{ textAlign: "right" }}>
                         <Typography
                           sx={{
                             fontSize: 12,
                             fontWeight: 600,
-                            color:
-                              "#344054",
+                            color: "#475467",
                           }}
                         >
-                          {
-                            item.customer
-                          }
+                          {formatFollowUpDate(item.NextFollowUp_Date)}
                         </Typography>
 
                         <Typography
                           sx={{
-                            fontSize: 10,
-                            color:
-                              "#98A2B3",
-                            mt: 0.2,
+                            fontSize: 12,
+                            color: "#98A2B3",
                           }}
                         >
-                          {item.staff}
+                          {item.NextFollowUp_Date
+                            ? new Date(item.NextFollowUp_Date).toLocaleTimeString(
+                              "en-IN",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )
+                            : ""}
                         </Typography>
-
                       </Box>
 
+                      {/* STATUS */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Chip
+                          label={item.FollowUp_StatusName || "No Status"}
+                          size="small"
+                          sx={{
+                            height: 30,
+                            width: 125,
+                            fontSize: 11,
+                            fontWeight: 600,
+
+                            backgroundColor:
+                              (item.FollowUp_StatusName || "").includes("Demo")
+                                ? CRM_COLORS.purpleLight
+                                : (item.FollowUp_StatusName || "").includes("Quotation")
+                                  ? CRM_COLORS.orangeLight
+                                  : (item.FollowUp_StatusName || "").includes("Waiting")
+                                    ? CRM_COLORS.cyanLight
+                                    : CRM_COLORS.primaryLight,
+
+                            color:
+                              (item.FollowUp_StatusName || "").includes("Demo")
+                                ? CRM_COLORS.purple
+                                : (item.FollowUp_StatusName || "").includes("Quotation")
+                                  ? CRM_COLORS.orange
+                                  : (item.FollowUp_StatusName || "").includes("Waiting")
+                                    ? CRM_COLORS.cyan
+                                    : CRM_COLORS.primary,
+
+                            "& .MuiChip-label": {
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            },
+                          }}
+                        />
+                      </Box>
                     </Box>
-
-
-                    {/* DATE */}
-
-                    <Box
+                  ))
+                ) : (
+                  <Box
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      py: 5,
+                    }}
+                  >
+                    <Typography
                       sx={{
-                        display: {
-                          xs: "none",
-                          sm: "block",
-                        },
-
-                        textAlign:
-                          "right",
+                        fontSize: 12,
+                        color: "#98A2B3",
+                        fontWeight: 500,
                       }}
                     >
-
-                      <Typography
-                        sx={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color:
-                            "#475467",
-                        }}
-                      >
-                        {item.date}
-                      </Typography>
-
-                      <Typography
-                        sx={{
-                          fontSize: 10,
-                          color:
-                            "#98A2B3",
-                        }}
-                      >
-                        {item.time}
-                      </Typography>
-
-                    </Box>
-
-
-                    {/* STATUS */}
-
-                    <Chip
-                      label={item.status}
-                      size="small"
-                      sx={{
-                        height: 25,
-
-                        maxWidth: {
-                          xs: 130,
-                          sm: 220,
-                        },
-
-                        fontSize: 9.5,
-                        fontWeight: 600,
-
-                        backgroundColor:
-                          item.status.includes(
-                            "Demo"
-                          )
-                            ? CRM_COLORS.purpleLight
-                            : item.status.includes(
-                              "Quotation"
-                            )
-                              ? CRM_COLORS.orangeLight
-                              : item.status.includes(
-                                "Waiting"
-                              )
-                                ? CRM_COLORS.cyanLight
-                                : CRM_COLORS.primaryLight,
-
-                        color:
-                          item.status.includes(
-                            "Demo"
-                          )
-                            ? CRM_COLORS.purple
-                            : item.status.includes(
-                              "Quotation"
-                            )
-                              ? CRM_COLORS.orange
-                              : item.status.includes(
-                                "Waiting"
-                              )
-                                ? CRM_COLORS.cyan
-                                : CRM_COLORS.primary,
-
-                        "& .MuiChip-label": {
-                          overflow: "hidden",
-                          textOverflow:
-                            "ellipsis",
-                        },
-                      }}
-                    />
-
-
-                    <ArrowForwardIos
-                      sx={{
-                        fontSize: 10,
-                        color:
-                          "#B0B7C3",
-                        ml: 1,
-                      }}
-                    />
-
+                      No upcoming follow-ups
+                    </Typography>
                   </Box>
-                )
-              )}
+                )}
+              </Box>
+
 
             </CardContent>
-
           </Card>
-
         </Grid>
+
+
 
 
         {/* ================================================= */}
@@ -1025,7 +1069,7 @@ const Dashboard = () => {
                     CRM_COLORS.text,
                 }}
               >
-                Follow-up Summary
+                Total Summary
               </Typography>
 
               <Typography
@@ -1072,7 +1116,7 @@ const Dashboard = () => {
                   }}
                 >
 
-                  <PhoneOutlined
+                  <EventNoteOutlined
                     sx={{
                       fontSize: 20,
                       color:
@@ -1089,7 +1133,7 @@ const Dashboard = () => {
                           CRM_COLORS.secondaryText,
                       }}
                     >
-                      Contacted
+                      Total Leads
                     </Typography>
 
                     <Typography
@@ -1100,7 +1144,7 @@ const Dashboard = () => {
                           CRM_COLORS.primary,
                       }}
                     >
-                      64
+                      {dashBoardData?.TotalLeadCount}
                     </Typography>
 
                   </Box>
@@ -1109,8 +1153,6 @@ const Dashboard = () => {
 
               </Box>
 
-
-              {/* REQUIREMENT */}
 
               <Box
                 sx={{
@@ -1142,7 +1184,7 @@ const Dashboard = () => {
                   }}
                 >
 
-                  <DescriptionOutlined
+                  <PendingActionsOutlined
                     sx={{
                       fontSize: 20,
                       color:
@@ -1159,7 +1201,7 @@ const Dashboard = () => {
                           CRM_COLORS.secondaryText,
                       }}
                     >
-                      Requirements Collected
+                      Total Follow-ups
                     </Typography>
 
                     <Typography
@@ -1170,7 +1212,7 @@ const Dashboard = () => {
                           CRM_COLORS.cyan,
                       }}
                     >
-                      42
+                      {dashBoardData?.TotalLeadFollowup}
                     </Typography>
 
                   </Box>
@@ -1229,7 +1271,7 @@ const Dashboard = () => {
                           CRM_COLORS.secondaryText,
                       }}
                     >
-                      Won
+                      Total Won
                     </Typography>
 
                     <Typography
@@ -1240,7 +1282,7 @@ const Dashboard = () => {
                           CRM_COLORS.green,
                       }}
                     >
-                      {wonCount}
+                      {dashBoardData?.TotalLeadfollowupWon}
                     </Typography>
 
                   </Box>
@@ -1297,7 +1339,7 @@ const Dashboard = () => {
                           CRM_COLORS.secondaryText,
                       }}
                     >
-                      Lost
+                      Total Lost
                     </Typography>
 
                     <Typography
@@ -1308,7 +1350,7 @@ const Dashboard = () => {
                           CRM_COLORS.red,
                       }}
                     >
-                      {lostCount}
+                      {dashBoardData?.TotalLeadfollowupLost}
                     </Typography>
 
                   </Box>
@@ -1373,7 +1415,7 @@ const Dashboard = () => {
       {/* ================================================= */}
 
 
-    </Box>
+    </Box >
   );
 };
 

@@ -17,7 +17,7 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/Leads" element={<LeadsMain />} />
           <Route path="/LeadDetails/:leadCode" element={<LeadDetails />} />
-               <Route path="/CustomerDetails" element={<CustomerDetails />} />
+          <Route path="/CustomerDetails" element={<CustomerDetails />} />
         </Routes>
       </Suspense>
     </CContainer>

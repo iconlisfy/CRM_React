@@ -512,7 +512,7 @@ function FollowupHistory({ openFollowupHistryModal, setOpenFollowupHistryModal, 
                                                             size="small"
                                                             onClick={async () => {
                                                                 const data = await fetchfollowuudatabyId(item.FollowUp_Id);
-                                                                console.log(data);
+                                                                // console.log(data);
 
                                                                 handleFollowUp();
                                                             }}

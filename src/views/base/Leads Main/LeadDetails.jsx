@@ -67,7 +67,6 @@ function LeadDetails() {
     const [lead, setLead] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    console.log("lead",lead)
 
     useEffect(() => {
         getLead();

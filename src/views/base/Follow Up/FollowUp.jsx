@@ -194,7 +194,7 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
     useEffect(() => {
         if (!editFollowUp) return;
 
-        console.log("Loading FollowUp:", editFollowUp);
+        // console.log("Loading FollowUp:", editFollowUp);
 
         setSelectedFollowUpSts(editFollowUp?.FollowUpStatusId ?? "");
         setSelectedLeadQuality(
@@ -223,33 +223,6 @@ function FollowUp({ openFollowupModal, setOpenFollowupModal, size = 'md', editLe
             setValidationDialogOpen(true)
             return;
         }
-
-        // if (!selectedLeadQuality) {
-        //     setValidationMessage("Please select Lead Quality");
-        //     setFocusField("LeadQua")
-        //     setValidationDialogOpen(true)
-        //     return;
-        // }
-
-        // if (!description.trim()) {
-        //     setValidationMessage("Please enter Follow Up Description");
-        //     setFocusField("Desc")
-        //     setValidationDialogOpen(true)
-        //     return;
-        // }
-
-        // if (!nextFollowUp) {
-        //     setValidationMessage("Please select Next Follow Up Date");
-        //     setFocusField("NextFollowup")
-        //     setValidationDialogOpen(true)
-        //     return;
-        // }
-
-        // if (!LeadSourceLoc.trim()) {
-        //     toast.error("Please enter Lead Source Location");
-        //     return;
-        // }
-
 
         try {
 

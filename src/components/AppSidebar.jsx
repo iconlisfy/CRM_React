@@ -175,7 +175,6 @@ const AppSidebar = () => {
   // const hasImage = !!Image;
   const hasImage = !!Image && Image !== "null";
 
-
   // const sidebarGradient = 'linear-gradient(135deg, #4975db 0%, #12265e 100%)';
   const sidebarGradient = " #243863";
 
@@ -259,7 +258,7 @@ const AppSidebar = () => {
             flexDirection: 'column',
             gap: 2,
             pb: 2,
-
+            cursor: 'pointer',
             // hide scrollbar
             scrollbarWidth: 'none', // Firefox
             msOverflowStyle: 'none', // IE/Edge
@@ -335,33 +334,125 @@ const AppSidebar = () => {
       </CSidebar >
 
       {/* LOGOUT DIALOG */}
-      < Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        PaperProps={{
-          sx: { borderRadius: 3, minWidth: 320 },
-        }}
-      >
-        <DialogContent sx={{ textAlign: 'center', py: 3 }}>
-          <WarningAmberIcon sx={{ fontSize: 50, color: '#f57c00' }} />
-          <Typography variant="h6" sx={{ fontWeight: 600, mt: 1 }}>
-            Confirm Logout
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-            Are you sure you want to logout?
-          </Typography>
-        </DialogContent>
-
-        <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 1 }}>
-          <Button onClick={() => setOpenDialog(false)} variant="outlined">
-            Cancel
-          </Button>
-          <Button onClick={handleLogout} variant="contained" color="error">
-            Logout
-          </Button>
-        </DialogActions>
-      </Dialog >
-
+    <Dialog
+            open={openDialog}
+            onClose={() => setOpenDialog(false)}
+            PaperProps={{
+              sx: {
+                borderRadius: "16px",
+                minWidth: 340,
+                maxWidth: 380,
+                padding: 0.5,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
+              },
+            }}
+          >
+            <DialogContent
+              sx={{
+                textAlign: "center",
+                px: 4,
+                pt: 3.5,
+                pb: 2.5,
+              }}
+            >
+              {/* ICON */}
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  backgroundColor: "#FFF4E5",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mx: "auto",
+                  mb: 2,
+                }}
+              >
+                <WarningAmberIcon
+                  sx={{
+                    fontSize: 34,
+                    color: "#F59E0B",
+                  }}
+                />
+              </Box>
+  
+              {/* TITLE */}
+              <Typography
+                sx={{
+                  fontSize: 19,
+                  fontWeight: 700,
+                  color: "#1F2937",
+                }}
+              >
+                Confirm Logout
+              </Typography>
+  
+              {/* MESSAGE */}
+              <Typography
+                sx={{
+                  fontSize: 13.5,
+                  color: "#6B7280",
+                  mt: 1,
+                }}
+              >
+                Are you sure you want to logout?
+              </Typography>
+            </DialogContent>
+  
+            <DialogActions
+              sx={{
+                justifyContent: "center",
+                px: 4,
+                pb: 3,
+                gap: 1.2,
+              }}
+            >
+              {/* CANCEL */}
+              <Button
+                onClick={() => setOpenDialog(false)}
+                variant="outlined"
+                sx={{
+                  minWidth: 110,
+                  height: 40,
+                  textTransform: "none",
+                  borderRadius: "9px",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: "#4B5563",
+                  borderColor: "#D1D5DB",
+                  "&:hover": {
+                    borderColor: "#9CA3AF",
+                    backgroundColor: "#F9FAFB",
+                  },
+                }}
+              >
+                Cancel
+              </Button>
+  
+              {/* LOGOUT */}
+              <Button
+                onClick={handleLogout}
+                variant="contained"
+                sx={{
+                  minWidth: 110,
+                  height: 40,
+                  textTransform: "none",
+                  borderRadius: "9px",
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  backgroundColor: "#EF4444",
+                  boxShadow: "none",
+                  "&:hover": {
+                    backgroundColor: "#DC2626",
+                    boxShadow: "0 4px 12px rgba(239,68,68,0.25)",
+                  },
+                }}
+              >
+                Logout
+              </Button>
+            </DialogActions>
+          </Dialog>
 
 
       <Leads
