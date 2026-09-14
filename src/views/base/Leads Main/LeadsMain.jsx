@@ -204,14 +204,7 @@ function LeadsMain() {
         }
     };
 
-    // const StaffList = selectedDept === "All"
-    //     ? allStaff
-    //     : selectedDept
-    //         ? allStaff.filter(
-    //             (staff) => Number(staff.Dept_id) === Number(selectedDept)
-    //         )
-    //         : [];
-
+    // Satff Filter
     const StaffList = selectedDept === "All"
         ? allStaff.filter(
             (staff) =>
@@ -252,17 +245,6 @@ function LeadsMain() {
         return `${day}-${month}-${year} ${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
     };
 
-
-    // const handleChange = (event, newValue) => {
-    //     if (newValue === 5) {
-    //         setSelectedTab(5);
-    //         setOpenLeadModal(true);
-    //         return;
-    //     }
-
-    //     setSelectedTab(newValue);
-    //     setValue(newValue);
-    // };
 
     const handleChange = (event, newValue) => {
         // Reset filters

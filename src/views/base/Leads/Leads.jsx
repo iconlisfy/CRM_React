@@ -42,12 +42,12 @@ import {
 // import PersonSwapIcon from "@mui/icons-material/PersonSwap";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAsyncLock } from '../../../UseAsyncLock';
+import ClearIcon from "@mui/icons-material/Clear";
 
 function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   editLead = null, }) {
 
   const { modalClass } = useModal();
-
 
   const { role, deptid, name, empId, BrnchKey, dept, branch } = getReduxState()
 
@@ -123,8 +123,12 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   const [transferStaff, setTransferStaff] = useState("");
   const [transferRemarks, setTransferRemarks] = useState("");
 
+  const [isSearchFetched, setIsSearchFetched] = useState(false);
+
   const [selectedLead, setSelectedLead] = useState(null);
 
+  const [searchInput, setSearchInput] = useState("");
+  const [lead, setLead] = useState([])
   const [searchType, setSearchType] = useState("CustomerName");
 
   const CustPhnInputRef = useRef(null)
@@ -207,10 +211,13 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     setSelectedRow(null);
   };
 
+  const canEditLead = !isEditedState || isAdmin ||
+    (role === "Staff" && Number(selectedStaff) === Number(empId));
 
 
   useEffect(() => {
     if (!openLeadModal || !isEdited || !editLead) return;
+    setIsEditedState(true);
 
     setLeadId(editLead.LeadKey);
     setTopDateTime(new Date(editLead.LeadDate));
@@ -263,6 +270,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   }
 
+
+
   //===== Fetch latest Lead Id =====
   const fetchLatestId = async () => {
     try {
@@ -276,9 +285,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   }
 
-
-  const [searchInput, setSearchInput] = useState("");
-  const [lead, setLead] = useState([])
+  console.log("Lead", leadId)
 
   const getLead = async (selectedLeadCode) => {
     try {
@@ -290,7 +297,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
       if (res.data.status) {
         const data = res.data.data;
-
+        setIsSearchFetched(true);
         // Mark as edit mode
         setIsEditedState(true);
 
@@ -307,7 +314,23 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
         setSelectedStaff(data.AssignId || "");
         setContactperson(data.ContactedPerson || "");
+        setSelectedStaff(data.AssignId || "");
 
+        if (data.AssignId) {
+          const assignedStaff = allStaff.find(
+            staff => Number(staff.ahmst_key) === Number(data.AssignId)
+          );
+
+          if (assignedStaff) {
+            setFilteredStaff(prev => {
+              const exists = prev.some(
+                staff => Number(staff.ahmst_key) === Number(data.AssignId)
+              );
+
+              return exists ? prev : [...prev, assignedStaff];
+            });
+          }
+        }
         setSelectedLeadSource(data.LeadSourceId || "");
         setLeadSourceLocation(data.LeadLocation || "");
 
@@ -325,10 +348,9 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         setSelectedLeadQuality(data.LeadQualityId || "");
 
         setDoubtfulLead(data.IsDoubtFull || false);
-
         setEnquiredItems(
           (data.Products || []).map((item, index) => ({
-            id: item.EnquiryId || index + 1,
+            id: index + 1,
             productKey: item.ProductId,
             enquiryId: item.EnquiryId,
             product: item.Product,
@@ -338,6 +360,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
           }))
         );
       }
+
     } catch (err) {
       console.log("Error fetching lead:", err);
       // } finally {
@@ -370,7 +393,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
             : item
         )
       );
-      console.log("enquirepr", enquiredItems)
       setIsEditing(false);
       setEditingRowId(null);
     } else {
@@ -448,7 +470,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     setEditingRowId(null);
     setSelectedRow(null);
     setUpdateDialogOpen(false);
-
+    setIsSearchFetched(false);
     // =========================
     // Customer Details
     // =========================
@@ -460,7 +482,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     // =========================
     // Assignment / Lead Source
     // =========================
-    setSelectedStaff(isAdmin ? "" : empId);
+    setSelectedStaff(empId);
     setSelectedLeadSource("");
     setLeadSourceLocation("");
 
@@ -516,7 +538,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       const fetchResponse = await axiosInstance.get(`/ProductsAPI/GetAll`);
 
       if (fetchResponse.data?.products) {
-        console.log("fetchResponse", fetchResponse)
+        // console.log("fetchResponse", fetchResponse)
         // FILTER ONLY PRODUCT TYPE
         const filteredProducts = fetchResponse.data.products.filter(
           (item) => item?.mstr_type === "Product"
@@ -528,6 +550,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       console.log("error while fetching all data", error);
     }
   };
+
+  console.log("iseditingstate", isEditedState)
 
   //===== Fetch Masters Data =====
   const fetchMasters = async () => {
@@ -570,13 +594,9 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       const staffData = res?.data?.staff;
 
       if (Array.isArray(staffData)) {
-        const filteredStaff = staffData.filter(
-          (staff) =>
-            staff.DeptName?.toLowerCase() === "sales" ||
-            staff.UserGroup?.toLowerCase() === "administrator"
-        );
-
-        setAllStaff(filteredStaff);
+        // Keep ALL staff here.
+        // We will filter only when creating a new lead.
+        setAllStaff(staffData);
       } else {
         setAllStaff([]);
       }
@@ -586,21 +606,28 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   };
 
-
-
   const filteredStaff = (() => {
-
-    if (isAdmin) {
+    // When editing/fetching an existing lead,
+    // show all staff so the existing assigned person can be displayed.
+    if (isEditedState) {
       return allStaff;
     }
 
-    // Normal user
+    // Admin can select any staff for a new lead
+    if (isAdmin) {
+      return allStaff.filter(
+        (staff) =>
+          staff.DeptName?.toLowerCase() === "sales" ||
+          staff.DeptName?.toLowerCase() === "developer" ||
+          staff.UserGroup?.toLowerCase() === "administrator"
+      );
+    }
+
+    // Normal staff: only logged-in user for a NEW lead
     return allStaff.filter(
-      s => Number(s.ahmst_key) === Number(empId)
+      (staff) => Number(staff.ahmst_key) === Number(empId)
     );
-
   })();
-
   // Highlight Text
   function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -628,7 +655,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     );
   }
 
-
   useEffect(() => {
     if (openLeadModal) {
       fetchProducts()
@@ -638,7 +664,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       fetchDepartment()
       fetchAllData()
     }
-
   }, [openLeadModal])
 
   //====== Generate LeadId ==========
@@ -655,64 +680,218 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     return prefix + `L` + zeros + keyStr;
   };
 
-  //====== Log Desc==========
+  // ===== Log Description =====
   const getUpdateLogDescription = () => {
+    if (!isEditedState) return "";
 
-    if (!isEditedState || (!editLead && !lead)) return "";
+    // Original lead data can come from either editLead or getLead()
+    const originalLead = lead?.LeadKey
+      ? lead
+      : editLead;
+
+    if (!originalLead) {
+      return "Lead updated";
+    }
 
     const changes = [];
 
-    if (editLead.CustomerPhone !== customerPhone) {
+    // Helper to compare values safely
+    const normalize = (value) => {
+      if (value === null || value === undefined) return "";
+      return String(value).trim();
+    };
+
+    // Helper to display empty values
+    const displayValue = (value) => {
+      const normalized = normalize(value);
+      return normalized || "-";
+    };
+
+    // Customer Details
+    if (
+      normalize(originalLead.CustomerPhone) !==
+      normalize(customerPhone)
+    ) {
       changes.push(
-        `Customer Phone: ${editLead.CustomerPhone || "-"} → ${customerPhone}`
+        `Customer Phone: ${displayValue(originalLead.CustomerPhone)} → ${displayValue(customerPhone)}`
       );
     }
 
-    if (editLead.CustomerName !== customerName) {
+    if (
+      normalize(originalLead.CustomerName) !==
+      normalize(customerName)
+    ) {
       changes.push(
-        `Customer Name: ${editLead.CustomerName || "-"} → ${customerName}`
+        `Customer Name: ${displayValue(originalLead.CustomerName)} → ${displayValue(customerName)}`
       );
     }
 
-    if (editLead.Place !== place) {
+    if (
+      normalize(originalLead.Place) !==
+      normalize(place)
+    ) {
       changes.push(
-        `Place: ${editLead.Place || "-"} → ${place}`
+        `Place: ${displayValue(originalLead.Place)} → ${displayValue(place)}`
       );
     }
 
-    if (editLead.AssignId !== selectedStaff) {
-      changes.push("Assigned Staff changed");
-    }
-
-    if (editLead.Remarks !== remarks) {
-      changes.push("Remarks updated");
-    }
-
-    if (editLead.IsFollowUpReq !== followUpRequired) {
+    if (
+      normalize(originalLead.ContactedPerson) !==
+      normalize(contactperson)
+    ) {
       changes.push(
-        `Follow Up: ${editLead.IsFollowUpReq ? "Yes" : "No"} → ${followUpRequired ? "Yes" : "No"}`
+        `Contacted Person: ${displayValue(originalLead.ContactedPerson)} → ${displayValue(contactperson)}`
       );
     }
 
-    if (editLead.IsDoubtFull !== doubtfulLead) {
+    // Assign to
+    if (
+      Number(originalLead.AssignId || 0) !==
+      Number(selectedStaff || 0)
+    ) {
       changes.push(
-        `Doubtful Lead: ${editLead.IsDoubtFull ? "Yes" : "No"} → ${doubtfulLead ? "Yes" : "No"}`
+        `Assigned Staff: ${displayValue(originalLead.AssignId)} → ${displayValue(selectedStaff)}`
       );
     }
 
-    // Product changes
-    if (JSON.stringify(editLead.Products || []) !== JSON.stringify(
-      enquiredItems.map(item => ({
-        Product: item.product,
-        ProductId: item.productKey,
-        Quantity: Number(item.qty),
-        Rate: Number(item.value),
-        Note: item.note
+    // Lead Source
+    if (
+      Number(originalLead.LeadSourceId || 0) !==
+      Number(selectedLeadSource || 0)
+    ) {
+      changes.push(
+        `Lead Source: ${displayValue(originalLead.LeadSourceId)} → ${displayValue(selectedLeadSource)}`
+      );
+    }
+
+    if (
+      normalize(originalLead.LeadLocation) !==
+      normalize(leadSourceLocation)
+    ) {
+      changes.push(
+        `Lead Source Location: ${displayValue(originalLead.LeadLocation)} → ${displayValue(leadSourceLocation)}`
+      );
+    }
+
+    // =========================
+    // Lead Type
+    // =========================
+
+    if (
+      Number(originalLead.LeadTypeId || 0) !==
+      Number(selectedLeadType || 0)
+    ) {
+      changes.push(
+        `Lead Type: ${displayValue(originalLead.LeadTypeId)} → ${displayValue(selectedLeadType)}`
+      );
+    }
+
+    // Lead Quality
+    if (
+      Number(
+        originalLead.LeadQualityId ??
+        originalLead.LeadQuality ??
+        0
+      ) !== Number(selectedLeadQuality || 0)
+    ) {
+      changes.push(
+        `Lead Quality: ${displayValue(
+          originalLead.LeadQualityId ?? originalLead.LeadQuality
+        )} → ${displayValue(selectedLeadQuality)}`
+      );
+    }
+
+    // Remarks
+    if (
+      normalize(originalLead.Remarks) !==
+      normalize(remarks)
+    ) {
+      changes.push(
+        `Remarks: ${displayValue(originalLead.Remarks)} → ${displayValue(remarks)}`
+      );
+    }
+
+    // Follow Up Required
+    if (
+      Boolean(originalLead.IsFollowUpReq) !==
+      Boolean(followUpRequired)
+    ) {
+      changes.push(
+        `Follow Up Required: ${originalLead.IsFollowUpReq ? "Yes" : "No"
+        } → ${followUpRequired ? "Yes" : "No"
+        }`
+      );
+    }
+
+    // Follow Up Date
+    const originalFollowUpDate = originalLead.FollowUpDate
+      ? new Date(originalLead.FollowUpDate).getTime()
+      : null;
+
+    const currentFollowUpDate =
+      followUpRequired && followUpDateTime
+        ? new Date(followUpDateTime).getTime()
+        : null;
+
+    if (originalFollowUpDate !== currentFollowUpDate) {
+      changes.push(
+        `Follow Up Date: ${originalLead.FollowUpDate
+          ? format(
+            new Date(originalLead.FollowUpDate),
+            "dd-MMM-yyyy hh:mm aa"
+          )
+          : "-"
+        } → ${currentFollowUpDate
+          ? format(
+            new Date(followUpDateTime),
+            "dd-MMM-yyyy hh:mm aa"
+          )
+          : "-"
+        }`
+      );
+    }
+
+    // Doubtful Lead
+    if (
+      Boolean(originalLead.IsDoubtFull) !==
+      Boolean(doubtfulLead)
+    ) {
+      changes.push(
+        `Doubtful Lead: ${originalLead.IsDoubtFull ? "Yes" : "No"
+        } → ${doubtfulLead ? "Yes" : "No"
+        }`
+      );
+    }
+
+    // Products
+    const originalProducts = (originalLead.Products || [])
+      .map((item) => ({
+        productId: Number(item.ProductId || 0),
+        product: normalize(item.Product),
+        note: normalize(item.Note),
+        quantity: Number(item.Quantity || 0),
+        rate: Number(item.Rate || 0),
       }))
-    )) {
+      .sort((a, b) => a.productId - b.productId);
+
+    const currentProducts = (enquiredItems || [])
+      .map((item) => ({
+        productId: Number(item.productKey || 0),
+        product: normalize(item.product),
+        note: normalize(item.note),
+        quantity: Number(item.qty || 0),
+        rate: Number(item.value || 0),
+      }))
+      .sort((a, b) => a.productId - b.productId);
+
+    if (
+      JSON.stringify(originalProducts) !==
+      JSON.stringify(currentProducts)
+    ) {
       changes.push("Products updated");
     }
 
+    // Final Result
     return changes.length
       ? changes.join(", ")
       : "No changes";
@@ -732,8 +911,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       try {
         const requestData = {
           IsEdited: isEditedState,
-          LeadKey: editLead?.LeadKey || lead?.LeadKey || '',
-          LeadCode: editLead?.LeadCode || generateLeadId(leadId),
+          LeadKey: isEditedState ? (lead?.LeadKey ?? editLead?.LeadKey ?? "") : '',
+          LeadCode: isEditedState ? (lead?.LeadCode ?? editLead?.LeadCode ?? "") : generateLeadId(leadId),
           LeadDate: format(topDateTime, "yyyy-MM-dd'T'HH:mm:ss"),
           CustPhNo: customerPhone,
           CustName: customerName,
@@ -753,7 +932,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
           UserInfo: name,
           ContactedPerson: contactperson,
           Products: enquiredItems.map((item) => ({
-            EnquiryId: isEdited ? item.enquiryId : '', // or null if your API expects null
+            EnquiryId: isEditedState ? item.enquiryId : '', // or null if your API expects null
             Product: item.product,
             ProductId: item.productKey,
             Note: item.note,
@@ -780,7 +959,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
           requestData
         );
 
-        console.log(response.data);
 
         if (response.data.status === true) {
           toast.success(isEditedState ? "Updated Successfully" : "Saved Successfully");
@@ -799,6 +977,12 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   // ===== Lead Transfer ======
   const handleTransfer = async () => {
 
+    (!leadId && !editLead?.LeadCode)
+    {
+      setValidationMessage("No Lead Available to Transfer!");
+      setValidationDialogOpen(true);
+      return;
+    }
 
     if (!transferDept) {
       setValidationMessage("Please Select Department");
@@ -857,6 +1041,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   };
 
 
+
+  const staffOptions = isSearchFetched ? allStaff : filteredStaff;
   return (
 
 
@@ -868,7 +1054,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         classmstName={`${modalClass} modal custom-modal-close custom-modal-width custom-centered-modal`}  // Concatenate class mstNames correctly
         alignment="center"
         visible={openLeadModal}
-        onClose={() => setOpenLeadModal(false)}
+        onClose={() => {
+          setOpenLeadModal(false);
+          handleNew();
+        }}
         aria-labelledby="VerticallyCenteredExample">
         <CModalHeader
           closeButton={false}
@@ -1033,9 +1222,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
                             const leadCode = selectedCustomer.LeadCode;
 
-                            // console.log("Selected Customer:", selectedCustomer);
-                            // console.log("Selected LeadCode:", leadCode);
-
                             getLead(leadCode);
                           }}
 
@@ -1133,8 +1319,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                             />
                           )}
                         />
-
-
                       </Grid>
                     </Grid>
                   </CardContent>
@@ -1199,7 +1383,11 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                         <TextField
                           label="Lead Id"
                           size="small"
-                          value={isEdited ? editLead?.LeadCode : generateLeadId(leadId)}
+                          value={
+                            isEditedState
+                              ? (lead?.LeadCode || editLead?.LeadCode || generateLeadId(leadId))
+                              : generateLeadId(leadId)
+                          }
                           // onChange={(e) => setLeadId(e.target.value)}
                           sx={{
 
@@ -1315,6 +1503,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           fullWidth
                           select
                           value={selectedStaff}
+                          disabled={isSearchFetched}
                           onChange={(e) => setSelectedStaff(e.target.value)}
                           sx={{
                             backgroundColor: '#fff',
@@ -1328,8 +1517,12 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           }}
                         >
 
-                          {filteredStaff.map(staff => (
-                            <MenuItem key={staff.ahmst_key} value={staff.ahmst_key}>
+
+                          {staffOptions.map((staff) => (
+                            <MenuItem
+                              key={staff.ahmst_key}
+                              value={staff.ahmst_key}
+                            >
                               {staff.ahmst_pname}
                             </MenuItem>
                           ))}
@@ -1354,6 +1547,21 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                               fontSize: '0.95rem',
                             },
                           }}
+                          InputProps={{
+                            endAdornment: selectedLeadSource && (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent menu from opening
+                                    setSelectedLeadSource("");
+                                  }}
+                                >
+                                  <ClearIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
                         >
                           {leadSourceList
                             ?.filter(item => item?.desc?.trim()) // remove empty names
@@ -1367,25 +1575,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                       </Grid>
 
                       <Grid item xs={12} sm={6} md={3}>
-                        {/* <TextField
-                          label="Lead Source Location"
-                          type="text"
-                          size="small"
-                          fullWidth
-                          value={leadSourceLocation}
-                          onChange={(e) => setLeadSourceLocation(e.target.value)}
-                          sx={{
-                            backgroundColor: '#fff',
-                            '& input': {
-                              padding: '8px',
-                              fontSize: '0.95rem',
-                              '&:focus': {
-                                backgroundColor: 'var(--focus-bg-color)'
-                              }
-                            }
-                          }}
-                        /> */}
-
 
                         <Autocomplete
                           size="small"
@@ -1786,6 +1975,22 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                               fontSize: '0.95rem',
                             },
                           }}
+
+                          InputProps={{
+                            endAdornment: selectedLeadType && (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent menu from opening
+                                    setSelectedLeadType("");
+                                  }}
+                                >
+                                  <ClearIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
                         >
                           {leadTypeList
                             ?.filter(item => item?.desc?.trim()) // remove empty names
@@ -1816,6 +2021,21 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                               padding: '8px',
                               fontSize: '0.95rem',
                             },
+                          }}
+                          InputProps={{
+                            endAdornment: selectedLeadQuality && (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent menu from opening
+                                    setSelectedLeadQuality("");
+                                  }}
+                                >
+                                  <ClearIcon fontSize="small" />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
                           }}
                         >
                           {leadQualityList
@@ -1853,6 +2073,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                       <Grid item xs={12} sm={12} md={2.5} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, alignItems: 'center' }}>
                         <Button
                           onClick={() => setOpenTransferModal(true)}
+                          disabled={!canEditLead}
                           variant="contained"
                           sx={{
                             textTransform: 'none',
@@ -1866,6 +2087,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                               background:
                                 "linear-gradient(135deg, #7b99f8 0%, #5b84e9 50%, #4a618f 100%)",
                               boxShadow: "0 6px 14px rgba(73,117,219,0.45)",
+                            },
+                            "&.Mui-disabled": {
+                              cursor: 'not-allowed', // Change cursor style
+                              pointerEvents: "auto"
                             },
                           }}
                         >
@@ -1895,22 +2120,32 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
                         <Button
                           onClick={handleSaveUpdate}
-                          disabled={isSaving}
+                          disabled={isSaving || !canEditLead}
                           variant="contained"
+
                           sx={{
-                            textTransform: 'none',
-                            height: '38px',
-                            width: '100px',
-                            color: '#f5f7fa',
+                            textTransform: "none",
+                            height: "38px",
+                            width: "100px",
+                            color: "#f5f7fa",
                             background:
                               "linear-gradient(135deg, #6d8ef5 0%, #4975db 50%, #3f5483 100%)",
                             boxShadow: "0 4px 10px rgba(73,117,219,0.35)",
-                            '&:hover': {
+
+                            "&:hover": {
                               background:
                                 "linear-gradient(135deg, #7b99f8 0%, #5b84e9 50%, #4a618f 100%)",
                               boxShadow: "0 6px 14px rgba(73,117,219,0.45)",
                             },
+
+                            // Disabled button
+                            "&.Mui-disabled": {
+                              cursor: 'not-allowed', // Change cursor style
+                              pointerEvents: "auto"
+                            },
                           }}
+
+
                         >
                           Save
                         </Button>
@@ -1925,7 +2160,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
         </CModalBody>
 
-      </CModal>
+      </CModal >
 
 
 
@@ -1933,7 +2168,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       {/* ======================================================================== */}
 
 
-      <Dialog
+      < Dialog
         open={deleteDialogOpen}
         onClose={cancelDeleteItem}
       >
@@ -1966,12 +2201,12 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
           </Button>
         </DialogActions>
 
-      </Dialog>
+      </Dialog >
 
       {/* ============================================================= */}
 
 
-      <Dialog
+      < Dialog
         open={updateDialogOpen}
         onClose={cancelUpdateItem}
       >
@@ -1997,17 +2232,18 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
             Yes
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog >
 
       {/* ======================================================================= */}
 
-      <Dialog
+      < Dialog
         open={openTransferModal}
         onClose={(event, reason) => {
           if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
             setOpenTransferModal(false);
           }
-        }}
+        }
+        }
         maxWidth="sm"
         fullWidth
         PaperProps={{
@@ -2019,7 +2255,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         }}
       >
         {/* Header */}
-        <DialogTitle
+        < DialogTitle
           sx={{
             background: "#243863",
             color: "#fff",
@@ -2056,10 +2292,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
               height="22"
             />
           </Button>
-        </DialogTitle>
+        </DialogTitle >
 
         {/* Body */}
-        <DialogContent
+        < DialogContent
           sx={{
             bgcolor: "#e4ebf3",
             px: 1.5,
@@ -2247,7 +2483,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
             </CardContent>
           </Card>
 
-        </DialogContent>
+        </DialogContent >
 
       </Dialog >
 
@@ -2255,7 +2491,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
 
 
-      <Dialog
+      < Dialog
         open={validationDialogOpen}
         onClose={() => setValidationDialogOpen(false)}
         disableRestoreFocus
@@ -2290,7 +2526,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
             OK
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog >
 
 
     </>
