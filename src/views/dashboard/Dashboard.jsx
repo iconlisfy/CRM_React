@@ -136,7 +136,6 @@ const KpiCard = ({
   color,
   lightColor,
   growth,
-  // subtitle = "vs last month",
 }) => {
   return (
     <Card
@@ -403,6 +402,93 @@ const Dashboard = () => {
   const fetchStaff = async () => {
     try {
       const res = await axiosInstance.get("/AcctMstStaffAPI/GetAll");
+<<<<<<< HEAD
+=======
+
+      const staffData = res?.data?.staff;
+
+      if (Array.isArray(staffData)) {
+        const filteredStaff = staffData.filter(
+          (staff) =>
+            staff.DeptName?.toLowerCase() === "sales" ||
+            staff.UserGroup?.toLowerCase() === "administrator"
+        );
+
+        setAllStaff(filteredStaff);
+      } else {
+        setAllStaff([]);
+      }
+    } catch (err) {
+      console.log("Error fetching staff", err);
+      setAllStaff([]);
+    }
+  }
+
+  //===== Fetch Dashboard Data =====
+  const fetchData = async () => {
+    try {
+      const filterEmpId =
+        selectedStaff === "All" ? 0 : selectedStaff;
+
+      const fetchResponse = await axiosInstance.get(
+        `DashboardAPI/Dashboard?EmpId=${empId}&UsrGrp=${role}&FilterEmpId=${filterEmpId}`);
+
+      const data = fetchResponse?.data?.data;
+
+      const formattedData = {
+        ...data,
+
+        UpcomingFollowups: Array.isArray(data?.UpcomingFollowups)
+          ? data.UpcomingFollowups.map((item) => ({
+            ...item,
+
+            customer: item.CustomerName || "",
+            // staff: item.StaffName || "",
+            date: item.NextFollowUp_Date
+              ? new Date(item.NextFollowUp_Date).toLocaleDateString("en-IN")
+              : "",
+            time: item.NextFollowUp_Date
+              ? new Date(item.NextFollowUp_Date).toLocaleTimeString(
+                "en-IN",
+                {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }
+              )
+              : "",
+            status: item.FollowUp_StatusName || "",
+          }))
+          : [],
+      };
+
+      setDashBoardData(formattedData);
+
+      console.log("fetchResponse", fetchResponse);
+    } catch (error) {
+      console.error("Error while fetching dashboard data:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedStaff, empId, role]);
+
+  useEffect(() => {
+    fetchStaff()
+  }, [])
+
+  const formatFollowUpDate = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+>>>>>>> cf6ecfcad3c0664ee9916ce2a072b58f43f692e2
 
       const staffData = res?.data?.staff;
 

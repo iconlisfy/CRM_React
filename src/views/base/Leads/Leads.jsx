@@ -551,7 +551,10 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   };
 
+<<<<<<< HEAD
   console.log("iseditingstate", isEditedState)
+=======
+>>>>>>> cf6ecfcad3c0664ee9916ce2a072b58f43f692e2
 
   //===== Fetch Masters Data =====
   const fetchMasters = async () => {
@@ -975,44 +978,51 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     });
   };
   // ===== Lead Transfer ======
+  // ===== Lead Transfer ======
   const handleTransfer = async () => {
 
-    (!leadId && !editLead?.LeadCode)
-    {
+    // Check Lead Available
+    if (!leadId && !editLead?.LeadCode) {
       setValidationMessage("No Lead Available to Transfer!");
       setValidationDialogOpen(true);
       return;
     }
 
+    // Department validation
     if (!transferDept) {
       setValidationMessage("Please Select Department");
-      setFocusField("TransDept")
-      setValidationDialogOpen(true)
+      setFocusField("TransDept");
+      setValidationDialogOpen(true);
       return;
     }
 
+    // Staff validation
     if (!transferStaff) {
       setValidationMessage("Please Select a Staff");
-      setFocusField("TransEmp")
-      setValidationDialogOpen(true)
+      setFocusField("TransEmp");
+      setValidationDialogOpen(true);
       return;
     }
 
-
-
-    if (!transferRemarks.trim()) {
+    // Remarks validation
+    if (!transferRemarks?.trim()) {
       setValidationMessage("Please Enter Details");
-      setFocusField("TransDet")
-      setValidationDialogOpen(true)
+      setFocusField("TransDet");
+      setValidationDialogOpen(true);
       return;
     }
+
     try {
       const requestData = {
-        LeadCode: isEdited ? editLead?.LeadCode : generateLeadId(leadId),
+        LeadCode: isEdited
+          ? editLead?.LeadCode
+          : generateLeadId(leadId),
+
         TransferEmpId: selectedStaff,
         TransfertoEmpId: transferStaff,
         TransferDeptId: transferDept,
         TransferDetails: transferRemarks,
+
         logReason: "Lead Transfer",
         logDesc: `Lead transferred from ${selectedStaff} to ${transferStaff}. Reason: ${transferRemarks}`,
         logForm: "Lead Entry",
@@ -1020,29 +1030,39 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         logUserId: empId,
       };
 
-      const transresponse = await axiosInstance.post("/SaveTransferDetailsAPI/SaveTransferDetails", requestData);
+      const transresponse = await axiosInstance.post(
+        "/SaveTransferDetailsAPI/SaveTransferDetails",
+        requestData
+      );
+
       if (transresponse.data?.status === true) {
         toast.success("Lead Transfer Successfully");
 
         setOpenTransferModal(false);
-        setOpenLeadModal(false)
-        // optional reset
+        setOpenLeadModal(false);
+
+        // Reset
         setSelectedStaff("");
         setTransferStaff("");
         setTransferDept("");
         setTransferRemarks("");
       } else {
-        toast.error(transresponse.data?.message || "Transfer failed");
+        toast.error(
+          transresponse.data?.message || "Transfer failed"
+        );
       }
 
     } catch (error) {
+      console.error("Lead Transfer Error:", error);
       toast.error("Transfer failed");
     }
   };
 
 
 
+
   const staffOptions = isSearchFetched ? allStaff : filteredStaff;
+
   return (
 
 
