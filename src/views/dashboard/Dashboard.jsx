@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Card,
@@ -10,7 +10,15 @@ import {
   Chip,
   FormControl,
   InputLabel,
-  Select, MenuItem
+  Select, MenuItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  Paper,
 } from "@mui/material";
 
 import {
@@ -25,10 +33,17 @@ import {
   CheckCircleOutline,
   CancelOutlined,
   PendingActionsOutlined,
+  HourglassEmptyOutlined,
+  FileDownloadOutlined,
 } from "@mui/icons-material";
 import { PersonOffOutlined } from "@mui/icons-material";
 import getReduxState from "../../ReduxState";
 import axiosInstance from "../../axios";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { format, startOfMonth, subDays, isSameDay } from "date-fns";
+import { GlobalStyles } from "@mui/material";
+import { CalendarMonthOutlined, EastRounded } from "@mui/icons-material";
 
 // CRM COLORS
 const CRM_COLORS = {
@@ -57,76 +72,7 @@ const CRM_COLORS = {
   border: "#E2E8F0",
 };
 
-// FOLLOW-UP STATUS DATA
-const followUpSummary = [
-  {
-    title: "Initial Contact Pending",
-    value: 18,
-    color: CRM_COLORS.orange,
-  },
-  {
-    title: "Contacted",
-    value: 64,
-    color: CRM_COLORS.primary,
-  },
-  {
-    title: "Requirement Collected",
-    value: 42,
-    color: CRM_COLORS.cyan,
-  },
-  {
-    title: "Requirement Discussion",
-    value: 31,
-    color: CRM_COLORS.purple,
-  },
-  {
-    title: "Customer Interested",
-    value: 27,
-    color: CRM_COLORS.green,
-  },
-  {
-    title: "Won",
-    value: 12,
-    color: CRM_COLORS.green,
-  },
-  {
-    title: "Lost",
-    value: 7,
-    color: CRM_COLORS.red,
-  },
-];
 
-// UPCOMING FOLLOW-UPS
-const upcomingFollowUps = [
-  {
-    customer: "ABC Technologies",
-    staff: "Steni",
-    status: "Follow-up Scheduled",
-    date: "Today",
-    time: "10:30 AM",
-  },
-  {
-    customer: "XYZ Solutions",
-    staff: "John",
-    status: "Demo Scheduled",
-    date: "Today",
-    time: "11:45 AM",
-  },
-  {
-    customer: "Global Infotech",
-    staff: "Sarah",
-    status: "Quotation Under Discussion",
-    date: "Tomorrow",
-    time: "02:00 PM",
-  },
-  {
-    customer: "Tech World",
-    staff: "Steni",
-    status: "Waiting for Customer Response",
-    date: "Tomorrow",
-    time: "04:00 PM",
-  },
-];
 
 // KPI CARD
 const KpiCard = ({
@@ -289,82 +235,1008 @@ const KpiCard = ({
 };
 
 // ============================================================
-// STATUS PROGRESS
+// TOTAL SUMMARY DONUT CHART
 // ============================================================
 
-const StatusProgress = ({
-  title,
-  value,
-  percentage,
-  color,
-}) => {
-  return (
-    <Box sx={{ mb: 2 }}>
+// Donut geometry
+const DONUT_SIZE = 170;
+const DONUT_STROKE = 22;
+const DONUT_R = (DONUT_SIZE - DONUT_STROKE) / 2;
+const DONUT_C = 2 * Math.PI * DONUT_R;
+const DONUT_GAP = 3; // small gap between slices
 
+const TotalSummaryChart = ({ data, colors }) => {
+  const [animated, setAnimated] = useState(false);
+  const [active, setActive] = useState(null);
+
+  // API values may come as strings
+  const total = Number(data?.TotalLeadCount) || 0;
+  const followups = Number(data?.TotalLeadFollowup) || 0;
+  const won = Number(data?.TotalLeadfollowupWon) || 0;
+  const lost = Number(data?.TotalLeadfollowupLost) || 0;
+  const open = Math.max(total - won - lost, 0);
+
+  const segments = [
+    {
+      key: "won",
+      label: "Won",
+      value: won,
+      color: colors.green,
+      light: colors.greenLight,
+    },
+    {
+      key: "open",
+      label: "In progress",
+      value: open,
+      color: colors.orange,
+      light: colors.orangeLight,
+    },
+    {
+      key: "lost",
+      label: "Lost",
+      value: lost,
+      color: colors.red,
+      light: colors.redLight,
+    },
+  ];
+
+  const sum = segments.reduce((a, s) => a + s.value, 0);
+  const nonZero = segments.filter((s) => s.value > 0).length;
+  const pct = (v) => (sum ? ((v / sum) * 100).toFixed(1) : "0.0");
+  const winRate = total ? ((won / total) * 100).toFixed(1) : "0.0";
+
+  // Pre-compute slice lengths and offsets
+  let running = 0;
+  const slices = segments.map((s) => {
+    const len = sum ? (s.value / sum) * DONUT_C : 0;
+    const dash = nonZero > 1 && len > DONUT_GAP * 2 ? len - DONUT_GAP : len;
+    const slice = { ...s, dash, offset: running };
+    running += len;
+    return slice;
+  });
+
+  // Replay the draw animation whenever the numbers change
+  useEffect(() => {
+    setAnimated(false);
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => setAnimated(true))
+    );
+    return () => cancelAnimationFrame(id);
+  }, [won, lost, open]);
+
+  const activeSeg = segments.find((s) => s.key === active);
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        height: "410px",
+        borderRadius: "15px",
+        border: `1px solid ${colors.border}`,
+      }}
+    >
+      <CardContent
+        sx={{
+          p: "20px !important",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* HEADER */}
+        <Typography sx={{ fontSize: 15, fontWeight: 700, color: colors.text }}>
+          Total Summary
+        </Typography>
+        <Typography
+          sx={{ fontSize: 11, color: colors.secondaryText, mt: 0.3, mb: 1.5 }}
+        >
+          Lead outcomes for the selected period
+        </Typography>
+
+        {/* DONUT + LEGEND */}
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 2.5,
+            flexWrap: { xs: "wrap", sm: "nowrap" },
+            justifyContent: "center",
+          }}
+        >
+          {/* DONUT */}
+          <Box
+            sx={{
+              position: "relative",
+              width: DONUT_SIZE,
+              height: DONUT_SIZE,
+              flexShrink: 0,
+            }}
+          >
+            <svg
+              width={DONUT_SIZE}
+              height={DONUT_SIZE}
+              viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}
+              style={{ transform: "rotate(-90deg)", overflow: "visible" }}
+            >
+              {/* Track */}
+              <circle
+                cx={DONUT_SIZE / 2}
+                cy={DONUT_SIZE / 2}
+                r={DONUT_R}
+                fill="none"
+                stroke={colors.border}
+                strokeOpacity={0.6}
+                strokeWidth={DONUT_STROKE}
+              />
+
+              {slices.map((s) =>
+                s.value > 0 ? (
+                  <circle
+                    key={s.key}
+                    cx={DONUT_SIZE / 2}
+                    cy={DONUT_SIZE / 2}
+                    r={DONUT_R}
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth={active === s.key ? DONUT_STROKE + 6 : DONUT_STROKE}
+                    strokeDasharray={`${animated ? s.dash : 0} ${DONUT_C}`}
+                    strokeDashoffset={-s.offset}
+                    onMouseEnter={() => setActive(s.key)}
+                    onMouseLeave={() => setActive(null)}
+                    style={{
+                      cursor: "pointer",
+                      opacity: active && active !== s.key ? 0.35 : 1,
+                      transition:
+                        "stroke-dasharray 0.9s ease, stroke-width 0.2s ease, opacity 0.2s ease",
+                    }}
+                  />
+                ) : null
+              )}
+            </svg>
+
+            {/* CENTER LABEL */}
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  color: colors.secondaryText,
+                  fontWeight: 600,
+                }}
+              >
+                {activeSeg ? activeSeg.label : "Total leads"}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 28,
+                  fontWeight: 800,
+                  lineHeight: 1.1,
+                  color: activeSeg ? activeSeg.color : colors.text,
+                  letterSpacing: "-0.6px",
+                }}
+              >
+                {activeSeg ? activeSeg.value : total}
+              </Typography>
+              {activeSeg && (
+                <Typography
+                  sx={{ fontSize: 11, fontWeight: 700, color: activeSeg.color }}
+                >
+                  {pct(activeSeg.value)}%
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          {/* LEGEND */}
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 150,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+            }}
+          >
+            {segments.map((s) => (
+              <Box
+                key={s.key}
+                onMouseEnter={() => setActive(s.key)}
+                onMouseLeave={() => setActive(null)}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  px: 1.2,
+                  py: 0.9,
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  backgroundColor: active === s.key ? s.light : "transparent",
+                  transition: "background-color 0.2s ease",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "3px",
+                    backgroundColor: s.color,
+                    flexShrink: 0,
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#344054",
+                    flex: 1,
+                  }}
+                >
+                  {s.label}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: colors.text,
+                    minWidth: 24,
+                    textAlign: "right",
+                  }}
+                >
+                  {s.value}
+                </Typography>
+                <Box
+                  sx={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: s.color,
+                    backgroundColor: s.light,
+                    borderRadius: "6px",
+                    px: 0.8,
+                    py: 0.2,
+                    minWidth: 44,
+                    textAlign: "center",
+                  }}
+                >
+                  {pct(s.value)}%
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* BOTTOM STATS */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 1.2,
+            mt: 1.5,
+          }}
+        >
+          {[
+            {
+              label: "Total follow-ups",
+              value: followups,
+              color: colors.cyan,
+              light: colors.cyanLight,
+              icon: <PendingActionsOutlined />,
+            },
+            {
+              label: "Win rate",
+              value: `${winRate}%`,
+              color: colors.primary,
+              light: colors.primaryLight,
+              icon: <TrendingUpOutlined />,
+            },
+          ].map((tile) => (
+            <Box
+              key={tile.label}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                p: 1.3,
+                borderRadius: "10px",
+                backgroundColor: tile.light,
+                borderLeft: `3px solid ${tile.color}`,
+              }}
+            >
+              {React.cloneElement(tile.icon, {
+                sx: { fontSize: 20, color: tile.color },
+              })}
+              <Box>
+                <Typography sx={{ fontSize: 11, color: colors.secondaryText }}>
+                  {tile.label}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: tile.color,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {tile.value}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ============================================================
+// EXECUTIVE-WISE LEADS TABLE
+// ============================================================
+const ExecutiveWiseLeads = ({ rows = [] }) => {
+  const LEAD_COLUMNS = [
+    {
+      key: "new",
+      label: "New",
+      field: "LeadFollowupNewTdy",
+      color: "#1976D2",
+    },
+    {
+      key: "cold",
+      label: "Cold",
+      field: "LeadFollowupColdTdy",
+      color: "#094480",
+    },
+    {
+      key: "warm",
+      label: "Warm",
+      field: "LeadFollowupWarmTdy",
+      color: "#E89B00",
+    },
+    {
+      key: "hot",
+      label: "Hot",
+      field: "LeadFollowupHotTdy",
+      color: "#ff0d0d",
+    },
+    {
+      key: "won",
+      label: "Won",
+      field: "LeadfollowupWonTdy",
+      color: "#079c4a",
+    },
+    {
+      key: "lost",
+      label: "Lost",
+      field: "LeadfollowupLostTdy",
+      color: "#E53935",
+    },
+  ];
+
+  const FOLLOWUP_COLUMNS = [
+    {
+      key: "today",
+      label: "Today",
+      field: "TotalfollowupTdy",
+      color: "#1976D2",
+      lightColor: "#EAF3FF",
+    },
+    {
+      key: "delayed",
+      label: "Delayed",
+      field: "TotalfollowupDlyd",
+      color: "#E53935",
+      lightColor: "#FDECEC",
+    },
+    {
+      key: "upcoming",
+      label: "Upcoming",
+      field: "TotalfollowupUpcmng",
+      color: "#7B61A8",
+      lightColor: "#F3EEFA",
+    },
+  ];
+
+  const getLeadTotal = (employee) =>
+    LEAD_COLUMNS.reduce(
+      (sum, column) =>
+        sum + Number(employee?.[column.field] || 0),
+      0
+    );
+
+  const getColumnTotal = (field) =>
+    rows.reduce(
+      (sum, employee) =>
+        sum + Number(employee?.[field] || 0),
+      0
+    );
+
+  return (
+    <TableContainer
+      component={Paper}
+      elevation={0}
+      sx={{
+        borderRadius: "12px",
+        border: "1px solid #E2E5EA",
+        overflow: "hidden",
+        backgroundColor: "#FFFFFF",
+      }}
+    >
+      {/* TITLE */}
+      <Box
+        sx={{
+          height: "48px",
+          display: "flex",
+          alignItems: "center",
+          px: 2.5,
+          backgroundColor: "#FFFFFF",
+          borderBottom: "1px solid #E2E5EA",
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "#303642",
+          }}
+        >
+          Executive-Wise Leads
+        </Typography>
+      </Box>
+
+      <Table
+        size="small"
+        sx={{
+          minWidth: 1050,
+          borderCollapse: "collapse",
+
+          "& .MuiTableCell-root": {
+            borderRight: "1px solid #E3E5E8",
+            borderBottom: "1px solid #E3E5E8",
+          },
+        }}
+      >
+        <TableHead>
+
+          {/* MAIN HEADER */}
+          <TableRow>
+            <TableCell
+              rowSpan={2}
+              sx={{
+                width: "195px",
+                backgroundColor: "#F3F5F7",
+                color: "#343A40",
+                fontWeight: 600,
+                fontSize: "13px",
+                textAlign: "center",
+                verticalAlign: "middle",
+              }}
+            >
+              Executive Name
+            </TableCell>
+
+            <TableCell
+              colSpan={7}
+              align="center"
+              sx={{
+                backgroundColor: "#F3F5F7",
+                color: "#343A40",
+                fontWeight: 600,
+                fontSize: "13px",
+              }}
+            >
+              Leads
+            </TableCell>
+
+            <TableCell
+              colSpan={3}
+              align="center"
+              sx={{
+                backgroundColor: "#F3F5F7",
+                color: "#343A40",
+                fontWeight: 600,
+                fontSize: "13px",
+              }}
+            >
+              Leads in Follow-up
+            </TableCell>
+
+            <TableCell
+              rowSpan={2}
+              align="center"
+              sx={{
+                minWidth: "145px",
+                backgroundColor: "#F3F5F7",
+                color: "#343A40",
+                fontWeight: 600,
+                fontSize: "13px",
+                verticalAlign: "middle",
+              }}
+            >
+              Target Achieved
+            </TableCell>
+          </TableRow>
+
+          {/* SECOND HEADER */}
+          <TableRow>
+            {LEAD_COLUMNS.map((column) => (
+              <TableCell
+                key={column.key}
+                align="center"
+                sx={{
+                  backgroundColor: "#FAFBFC",
+                  color: "#596273",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  height: "42px",
+                }}
+              >
+                {column.label}
+              </TableCell>
+            ))}
+
+            <TableCell
+              align="center"
+              sx={{
+                backgroundColor: "#FAFBFC",
+                color: "#596273",
+                fontSize: "12px",
+                fontWeight: 600,
+              }}
+            >
+              Total
+            </TableCell>
+            {FOLLOWUP_COLUMNS.map((column) => (
+              <TableCell
+                key={column.key}
+                align="center"
+                sx={{
+                  backgroundColor: column.lightColor,
+                  color: column.color,
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  height: "42px",
+                  borderTop: `3px solid ${column.color}`,
+                }}
+              >
+                {column.label}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+
+        <TableBody>
+          {rows.length > 0 ? (
+            rows.map((employee, index) => {
+              const total = getLeadTotal(employee);
+
+              return (
+                <TableRow
+                  key={employee?.EmpId || index}
+                  sx={{
+                    backgroundColor:
+                      index % 2 === 0
+                        ? "#FFFFFF"
+                        : "#FAFBFC",
+
+                    "&:hover": {
+                      backgroundColor: "#F4F7FB",
+                    },
+                  }}
+                >
+                  {/* EMPLOYEE */}
+                  <TableCell
+                    sx={{
+                      color: "#303642",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      padding: "11px 12px",
+                    }}
+                  >
+                    {employee?.EmployeeName
+                      ? employee.EmployeeName.toUpperCase()
+                      : "-"}
+                  </TableCell>
+
+                  {/* LEADS */}
+                  {LEAD_COLUMNS.map((column) => {
+                    const value = Number(
+                      employee?.[column.field] || 0
+                    );
+
+                    return (
+                      <TableCell
+                        key={column.key}
+                        align="center"
+                        sx={{
+                          color:
+                            value === 0
+                              ? "#1976D2"
+                              : column.color,
+                          fontSize: "13px",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {value}
+                      </TableCell>
+                    );
+                  })}
+
+                  {/* TOTAL */}
+                  <TableCell
+                    align="center"
+                    sx={{
+                      color: "#303642",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {total}
+                  </TableCell>
+
+                  {/* FOLLOW UPS */}
+                  {FOLLOWUP_COLUMNS.map((column) => {
+                    const value = Number(employee?.[column.field] || 0);
+
+                    return (
+                      <TableCell
+                        key={column.key}
+                        align="center"
+                        sx={{
+                          backgroundColor: column.lightColor,
+                          color: column.color,
+                          fontSize: "13px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {value}
+                      </TableCell>
+                    );
+                  })}
+                  {/* TARGET */}
+                  <TableCell
+                    align="right"
+                    sx={{
+                      color: "#303642",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      paddingRight: "14px",
+                      textAlign: 'center'
+                    }}
+                  >
+                    {Number(employee?.TotaltargetAchieved || 0)}
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={12}
+                align="center"
+                sx={{
+                  padding: "35px",
+                  color: "#8A929E",
+                  fontSize: "13px",
+                }}
+              >
+                No employee data found
+              </TableCell>
+            </TableRow>
+          )}
+
+          {/* TOTAL ROW */}
+          {rows.length > 0 && (
+            <TableRow
+              sx={{
+                backgroundColor: "#F8F9FA",
+              }}
+            >
+              <TableCell
+                sx={{
+                  color: "#303642",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                }}
+              >
+                Total
+              </TableCell>
+
+              {LEAD_COLUMNS.map((column) => (
+                <TableCell
+                  key={column.key}
+                  align="center"
+                  sx={{
+                    color: column.color,
+                    fontSize: "13px",
+                    fontWeight: 700,
+
+                  }}
+                >
+                  {getColumnTotal(column.field)}
+                </TableCell>
+              ))}
+
+              <TableCell
+                align="center"
+                sx={{
+                  color: "#303642",
+                  fontSize: "13px",
+                  fontWeight: 700,
+
+                }}
+              >
+                {rows.reduce(
+                  (sum, employee) =>
+                    sum + getLeadTotal(employee),
+                  0
+                )}
+              </TableCell>
+              {FOLLOWUP_COLUMNS.map((column) => (
+                <TableCell
+                  key={column.key}
+                  align="center"
+                  sx={{
+                    backgroundColor: column.lightColor,
+                    color: column.color,
+                    fontSize: "13px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {getColumnTotal(column.field)}
+                </TableCell>
+              ))}
+
+              <TableCell
+                align="right"
+                sx={{
+                  color: "#303642",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  paddingRight: "14px",
+                  textAlign: 'center'
+                }}
+              >
+                {rows.reduce(
+                  (sum, employee) =>
+                    sum +
+                    Number(
+                      employee?.TargetAchieved || 0
+                    ),
+                  0
+                )}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+};
+// ============================================================
+// DATE BUTTON (custom input for react-datepicker)
+// ============================================================
+
+const DateButton = React.forwardRef(({ value, onClick, label }, ref) => (
+  <Box
+    ref={ref}
+    onClick={onClick}
+    sx={{
+      cursor: "pointer",
+      px: 1.2,
+      py: 0.4,
+      borderRadius: "8px",
+      transition: "background-color 0.2s ease",
+      "&:hover": { backgroundColor: CRM_COLORS.primaryLight },
+    }}
+  >
+    <Typography
+      sx={{
+        fontSize: 9.5,
+        fontWeight: 700,
+        letterSpacing: "0.6px",
+        textTransform: "uppercase",
+        color: CRM_COLORS.secondaryText,
+        lineHeight: 1.2,
+      }}
+    >
+      {label}
+    </Typography>
+    <Typography
+      sx={{
+        fontSize: 13,
+        fontWeight: 700,
+        color: CRM_COLORS.text,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {value}
+    </Typography>
+  </Box>
+));
+
+// ============================================================
+// DATE RANGE FILTER
+// ============================================================
+const DateRangeFilter = ({ fromDate, toDate, setFromDate, setToDate }) => {
+  const fromPickerRef = useRef(null);
+
+  const isActive = (preset) => {
+    const [f, t] = preset.get();
+    return isSameDay(f, fromDate) && isSameDay(t, toDate);
+  };
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+      {/* Calendar theme */}
+      <GlobalStyles
+        styles={{
+          ".crm-datepicker": {
+            fontFamily: "inherit",
+            fontSize: "11px",
+            border: `1px solid ${CRM_COLORS.border}`,
+            borderRadius: "12px",
+            overflow: "hidden",
+            boxShadow: "0 10px 26px rgba(41,68,119,0.18)",
+          },
+          ".crm-datepicker .react-datepicker__header": {
+            background: `linear-gradient(135deg, ${CRM_COLORS.primary}, ${CRM_COLORS.primaryDark})`,
+            borderBottom: "none",
+            paddingTop: "6px",
+            paddingBottom: "2px",
+          },
+          ".crm-datepicker .react-datepicker__current-month": {
+            color: "#fff",
+            fontSize: "11.5px",
+            marginBottom: "2px",
+          },
+          ".crm-datepicker .react-datepicker__day-name, .crm-datepicker .react-datepicker__day": {
+            width: "1.6rem",
+            lineHeight: "1.6rem",
+            margin: "1px",
+            fontSize: "10.5px",
+          },
+          ".crm-datepicker .react-datepicker__day-name": {
+            color: "#fff",
+          },
+          ".crm-datepicker .react-datepicker__month": {
+            margin: "4px 6px",
+          },
+          ".crm-datepicker .react-datepicker__navigation": {
+            top: "3px",
+          },
+          ".crm-datepicker .react-datepicker__navigation-icon::before": {
+            borderColor: "#fff",
+            borderWidth: "2px 2px 0 0",
+            height: "6px",
+            width: "6px",
+          },
+        }}
+      />
+
+      {/* Presets */}
+      <Box
+        sx={{
+          display: "flex",
+          p: 0.4,
+          borderRadius: "10px",
+          backgroundColor: "#fff",
+          border: `1px solid ${CRM_COLORS.border}`,
+        }}
+      >
+        {/* {DATE_PRESETS.map((preset) => {
+          const active = isActive(preset);
+          return (
+            <Box
+              key={preset.label}
+              onClick={() => {
+                const [f, t] = preset.get();
+                setFromDate(f);
+                setToDate(t);
+              }}
+              sx={{
+                px: 1.3,
+                py: 0.6,
+                borderRadius: "7px",
+                cursor: "pointer",
+                fontSize: 11.5,
+                fontWeight: 600,
+                transition: "all 0.2s ease",
+                color: active ? "#fff" : CRM_COLORS.secondaryText,
+                background: active
+                  ? `linear-gradient(135deg, ${CRM_COLORS.primary}, ${CRM_COLORS.primaryDark})`
+                  : "transparent",
+                boxShadow: active ? `0 3px 8px ${CRM_COLORS.primary}40` : "none",
+                "&:hover": {
+                  color: active ? "#fff" : CRM_COLORS.primary,
+                },
+              }}
+            >
+              {preset.label}
+            </Box>
+          );
+        })} */}
+      </Box>
+
+      {/* From → To pill */}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          mb: 0.7,
+          gap: 0.5,
+          pl: 0.6,
+          pr: 0.8,
+          py: 0.5,
+          borderRadius: "12px",
+          backgroundColor: "#fff",
+          border: `1px solid ${CRM_COLORS.border}`,
+          boxShadow: "0 2px 8px rgba(41,68,119,0.06)",
+          transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+          "&:hover": {
+            borderColor: CRM_COLORS.primary,
+            boxShadow: `0 4px 14px ${CRM_COLORS.primary}20`,
+          },
         }}
       >
         <Box
+          onClick={() => fromPickerRef.current?.setOpen(true)}
           sx={{
+            width: 96,
+            height: 36,
+            borderRadius: "9px",
             display: "flex",
             alignItems: "center",
-            gap: 0.8,
+            justifyContent: "center",
+            background: `linear-gradient(135deg, ${CRM_COLORS.primary}, ${CRM_COLORS.primary}CC)`,
+            boxShadow: `0 4px 10px ${CRM_COLORS.primary}35`,
           }}
         >
-          <Box
-            sx={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              backgroundColor: color,
-            }}
-          />
-
-          <Typography
-            sx={{
-              fontSize: 11.5,
-              color: CRM_COLORS.secondaryText,
-            }}
-          >
-            {title}
-          </Typography>
+          <CalendarMonthOutlined sx={{ fontSize: 18, color: "#fff" }} />
         </Box>
 
-        <Typography
-          sx={{
-            fontSize: 11.5,
-            fontWeight: 700,
-            color: CRM_COLORS.text,
-          }}
-        >
-          {value}
-        </Typography>
+        <DatePicker
+
+          ref={fromPickerRef}
+          selected={fromDate}
+          onChange={(date) => date && setFromDate(date)}
+          selectsStart
+          startDate={fromDate}
+          endDate={toDate}
+          maxDate={toDate}
+          dateFormat="dd MMM yyyy"
+          calendarClassName="crm-datepicker"
+          portalId="datepicker-portal"
+          popperProps={{ strategy: "fixed" }}
+          customInput={<DateButton label="From" />}
+        />
+
+        <EastRounded sx={{ fontSize: 16, color: CRM_COLORS.secondaryText }} />
+
+        <DatePicker
+          selected={toDate}
+          onChange={(date) => date && setToDate(date)}
+          selectsEnd
+          startDate={fromDate}
+          endDate={toDate}
+          // minDate={fromDate}
+          // maxDate={new Date()}
+          dateFormat="dd MMM yyyy"
+          calendarClassName="crm-datepicker"
+          portalId="datepicker-portal"
+          popperProps={{ strategy: "fixed" }}
+          customInput={<DateButton label="To" />}
+        />
       </Box>
-
-      <LinearProgress
-        variant="determinate"
-        value={percentage}
-        sx={{
-          height: 6,
-          borderRadius: 5,
-          backgroundColor: "#EEF1F5",
-
-          "& .MuiLinearProgress-bar": {
-            borderRadius: 5,
-            backgroundColor: color,
-          },
-        }}
-      />
     </Box>
   );
 };
-
-
 // ============================================================
 // DASHBOARD
 // ============================================================
@@ -382,28 +1254,18 @@ const Dashboard = () => {
   const [allStaff, setAllStaff] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState(empId);
   const [dashBoardData, setDashBoardData] = useState([])
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
 
-  const totalFollowUps = followUpSummary.reduce(
-    (total, item) => total + item.value,
-    0
-  );
-
-  const wonCount = 12;
-  const lostCount = 7;
-
-  const successRate =
-    totalFollowUps > 0
-      ? Math.round(
-        (wonCount / totalFollowUps) * 100
-      )
-      : 0;
+  // Date
+  const frmDate = fromDate ? format(fromDate, 'yyyy-MM-dd') : null
+  const todate = toDate ? format(toDate, 'yyyy-MM-dd') : null
 
   //===== Fetch Staff Data =====
   const fetchStaff = async () => {
     try {
       const res = await axiosInstance.get("/AcctMstStaffAPI/GetAll");
-<<<<<<< HEAD
-=======
+
 
       const staffData = res?.data?.staff;
 
@@ -431,7 +1293,7 @@ const Dashboard = () => {
         selectedStaff === "All" ? 0 : selectedStaff;
 
       const fetchResponse = await axiosInstance.get(
-        `DashboardAPI/Dashboard?EmpId=${empId}&UsrGrp=${role}&FilterEmpId=${filterEmpId}`);
+        `DashboardAPI/Dashboard?EmpId=${empId}&UsrGrp=${role}&FilterEmpId=${filterEmpId}&FromDate=${frmDate}&ToDate=${todate}`);
 
       const data = fetchResponse?.data?.data;
 
@@ -463,19 +1325,11 @@ const Dashboard = () => {
 
       setDashBoardData(formattedData);
 
-      console.log("fetchResponse", fetchResponse);
+      // console.log("fetchResponse", fetchResponse);
     } catch (error) {
       console.error("Error while fetching dashboard data:", error);
     }
   };
-
-  useEffect(() => {
-    fetchData();
-  }, [selectedStaff, empId, role]);
-
-  useEffect(() => {
-    fetchStaff()
-  }, [])
 
   const formatFollowUpDate = (dateString) => {
     if (!dateString) return "";
@@ -488,90 +1342,18 @@ const Dashboard = () => {
       year: "numeric",
     });
   };
->>>>>>> cf6ecfcad3c0664ee9916ce2a072b58f43f692e2
 
-      const staffData = res?.data?.staff;
 
-      if (Array.isArray(staffData)) {
-        const filteredStaff = staffData.filter(
-          (staff) =>
-            staff.DeptName?.toLowerCase() === "sales" ||
-            staff.UserGroup?.toLowerCase() === "administrator"
-        );
-
-        setAllStaff(filteredStaff);
-      } else {
-        setAllStaff([]);
-      }
-    } catch (err) {
-      console.log("Error fetching staff", err);
-      setAllStaff([]);
-    }
-  }
-
-  const fetchData = async () => {
-    try {
-      const filterEmpId =
-        selectedStaff === "All" ? 0 : selectedStaff;
-
-      const fetchResponse = await axiosInstance.get(
-        `DashboardAPI/Dashboard?EmpId=${empId}&UsrGrp=${role}&FilterEmpId=${filterEmpId}`);
-
-      const data = fetchResponse?.data?.data;
-
-      const formattedData = {
-        ...data,
-
-        UpcomingFollowups: Array.isArray(data?.UpcomingFollowups)
-          ? data.UpcomingFollowups.map((item) => ({
-            ...item,
-
-            customer: item.CustomerName || "",
-            staff: item.StaffName || "",
-            date: item.NextFollowUp_Date
-              ? new Date(item.NextFollowUp_Date).toLocaleDateString("en-IN")
-              : "",
-            time: item.NextFollowUp_Date
-              ? new Date(item.NextFollowUp_Date).toLocaleTimeString(
-                "en-IN",
-                {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }
-              )
-              : "",
-            status: item.FollowUp_StatusName || "",
-          }))
-          : [],
-      };
-
-      setDashBoardData(formattedData);
-
-      console.log("fetchResponse", fetchResponse);
-    } catch (error) {
-      console.error("Error while fetching dashboard data:", error);
-    }
-  };
-
+  // Removed the duplicate useEffects that were calling the APIs twice
   useEffect(() => {
     fetchData();
-  }, [selectedStaff, empId, role]);
+  }, [selectedStaff, empId, role, fromDate, toDate]);
 
   useEffect(() => {
     fetchStaff()
   }, [])
 
-  const formatFollowUpDate = (dateString) => {
-    if (!dateString) return "";
 
-    const date = new Date(dateString);
-
-    return date.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
   return (
     <Box
       sx={{
@@ -627,25 +1409,20 @@ const Dashboard = () => {
           </Typography>
         </Box>
 
-
-        {/* RIGHT */}
-
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: 1.5,
+            flexWrap: "wrap",
           }}
         >
-
           {/* STAFF - ADMIN ONLY */}
-
           {isAdmin && (
             <FormControl
               size="small"
               sx={{
                 minWidth: 220,
-
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "9px",
                   backgroundColor: "#fff",
@@ -679,12 +1456,11 @@ const Dashboard = () => {
 
               <Select
                 value={selectedStaff}
-                onChange={(e) => setSelectedStaff(e.target.value)}
+                onChange={(e) =>
+                  setSelectedStaff(e.target.value)
+                }
                 label="Staff"
               >
-
-
-                {/* ALL OPTION */}
                 <MenuItem
                   value="All"
                   sx={{
@@ -712,46 +1488,13 @@ const Dashboard = () => {
             </FormControl>
           )}
 
-
-          {/* DATE */}
-          <Box
-            sx={{
-              display: {
-                xs: "none",
-                sm: "flex",
-              },
-              alignItems: "center",
-              gap: 1,
-              px: 1.5,
-              py: 0.8,
-              borderRadius: "9px",
-              backgroundColor: CRM_COLORS.primaryLight,
-            }}
-          >
-            <Box
-              sx={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                backgroundColor: CRM_COLORS.green,
-              }}
-            />
-
-            <Typography
-              sx={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: CRM_COLORS.primary,
-              }}
-            >
-              {new Date().toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })}
-            </Typography>
-          </Box>
-
+          {/* DATE - ALL USERS */}
+          <DateRangeFilter
+            fromDate={fromDate}
+            toDate={toDate}
+            setFromDate={setFromDate}
+            setToDate={setToDate}
+          />
         </Box>
 
       </Box>
@@ -871,7 +1614,6 @@ const Dashboard = () => {
               }}
             >
               {/* HEADER */}
-              {/* HEADER */}
               <Box
                 sx={{
                   display: "flex",
@@ -927,7 +1669,7 @@ const Dashboard = () => {
                   >
                     {dashBoardData?.UpcomingFollowups?.length ?? 0}
                   </Typography>
-               
+
                 </Box>
               </Box>
 
@@ -1122,384 +1864,31 @@ const Dashboard = () => {
         </Grid>
 
 
-
-
         {/* ================================================= */}
-        {/* SALES SUMMARY */}
+        {/* TOTAL SUMMARY (DONUT CHART) */}
         {/* ================================================= */}
 
         <Grid item xs={12} md={5}>
-
-          <Card
-            elevation={0}
-            sx={{
-              height: "100%",
-              borderRadius: "15px",
-              border:
-                `1px solid ${CRM_COLORS.border}`,
-            }}
-          >
-
-            <CardContent
-              sx={{
-                p: "20px !important",
-              }}
-            >
-
-              <Typography
-                sx={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color:
-                    CRM_COLORS.text,
-                }}
-              >
-                Total Summary
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontSize: 11,
-                  color:
-                    CRM_COLORS.secondaryText,
-                  mt: 0.3,
-                  mb: 2,
-                }}
-              >
-                Important activities
-              </Typography>
-
-              {/* CONTACTED */}
-
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent:
-                    "space-between",
-
-                  p: 1.5,
-
-                  borderRadius: "10px",
-
-                  backgroundColor:
-                    CRM_COLORS.primaryLight,
-
-                  borderLeft:
-                    `3px solid ${CRM_COLORS.primary}`,
-
-                  mb: 1.2,
-                }}
-              >
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems:
-                      "center",
-                    gap: 1,
-                  }}
-                >
-
-                  <EventNoteOutlined
-                    sx={{
-                      fontSize: 20,
-                      color:
-                        CRM_COLORS.primary,
-                    }}
-                  />
-
-                  <Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        color:
-                          CRM_COLORS.secondaryText,
-                      }}
-                    >
-                      Total Leads
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color:
-                          CRM_COLORS.primary,
-                      }}
-                    >
-                      {dashBoardData?.TotalLeadCount}
-                    </Typography>
-
-                  </Box>
-
-                </Box>
-
-              </Box>
-
-
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent:
-                    "space-between",
-
-                  p: 1.5,
-
-                  borderRadius: "10px",
-
-                  backgroundColor:
-                    CRM_COLORS.cyanLight,
-
-                  borderLeft:
-                    `3px solid ${CRM_COLORS.cyan}`,
-
-                  mb: 1.2,
-                }}
-              >
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems:
-                      "center",
-                    gap: 1,
-                  }}
-                >
-
-                  <PendingActionsOutlined
-                    sx={{
-                      fontSize: 20,
-                      color:
-                        CRM_COLORS.cyan,
-                    }}
-                  />
-
-                  <Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        color:
-                          CRM_COLORS.secondaryText,
-                      }}
-                    >
-                      Total Follow-ups
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color:
-                          CRM_COLORS.cyan,
-                      }}
-                    >
-                      {dashBoardData?.TotalLeadFollowup}
-                    </Typography>
-
-                  </Box>
-
-                </Box>
-
-              </Box>
-
-
-              {/* WON */}
-
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent:
-                    "space-between",
-
-                  p: 1.5,
-
-                  borderRadius: "10px",
-
-                  backgroundColor:
-                    CRM_COLORS.greenLight,
-
-                  borderLeft:
-                    `3px solid ${CRM_COLORS.green}`,
-
-                  mb: 1.2,
-                }}
-              >
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems:
-                      "center",
-                    gap: 1,
-                  }}
-                >
-
-                  <CheckCircleOutline
-                    sx={{
-                      fontSize: 20,
-                      color:
-                        CRM_COLORS.green,
-                    }}
-                  />
-
-                  <Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        color:
-                          CRM_COLORS.secondaryText,
-                      }}
-                    >
-                      Total Won
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color:
-                          CRM_COLORS.green,
-                      }}
-                    >
-                      {dashBoardData?.TotalLeadfollowupWon}
-                    </Typography>
-
-                  </Box>
-
-                </Box>
-
-              </Box>
-
-
-              {/* LOST */}
-
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent:
-                    "space-between",
-
-                  p: 1.5,
-
-                  borderRadius: "10px",
-
-                  backgroundColor:
-                    CRM_COLORS.redLight,
-
-                  borderLeft:
-                    `3px solid ${CRM_COLORS.red}`,
-                }}
-              >
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems:
-                      "center",
-                    gap: 1,
-                  }}
-                >
-
-                  <CancelOutlined
-                    sx={{
-                      fontSize: 20,
-                      color:
-                        CRM_COLORS.red,
-                    }}
-                  />
-
-                  <Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        color:
-                          CRM_COLORS.secondaryText,
-                      }}
-                    >
-                      Total Lost
-                    </Typography>
-
-                    <Typography
-                      sx={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color:
-                          CRM_COLORS.red,
-                      }}
-                    >
-                      {dashBoardData?.TotalLeadfollowupLost}
-                    </Typography>
-
-                  </Box>
-
-                </Box>
-
-              </Box>
-
-
-              {/* SUCCESS RATE */}
-
-              {/* <Box
-                                sx={{
-                                    mt: 2,
-
-                                    pt: 1.5,
-
-                                    borderTop:
-                                        "1px solid #EEF1F5",
-
-                                    display: "flex",
-                                    justifyContent:
-                                        "space-between",
-                                    alignItems: "center",
-                                }}
-                            >
-
-                                <Typography
-                                    sx={{
-                                        fontSize: 11,
-                                        color:
-                                            CRM_COLORS.secondaryText,
-                                    }}
-                                >
-                                    Current win rate
-                                </Typography>
-
-                                <Typography
-                                    sx={{
-                                        fontSize: 16,
-                                        fontWeight: 700,
-                                        color:
-                                            CRM_COLORS.green,
-                                    }}
-                                >
-                                    {successRate}%
-                                </Typography>
-
-                            </Box> */}
-
-            </CardContent>
-
-          </Card>
-
+          <TotalSummaryChart data={dashBoardData} colors={CRM_COLORS} />
         </Grid>
 
       </Grid>
 
-
       {/* ================================================= */}
-      {/* UPCOMING FOLLOW-UPS */}
+      {/* EXECUTIVE-WISE LEADS */}
       {/* ================================================= */}
+      {isAdmin && (
+        <Box sx={{ mt: 1.8 }}>
+          <ExecutiveWiseLeads
+            rows={
+              Array.isArray(dashBoardData?.Employees)
+                ? dashBoardData.Employees
+                : []
+            }
+          />
 
-
+        </Box>
+      )}
     </Box >
   );
 };

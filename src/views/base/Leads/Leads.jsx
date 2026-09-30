@@ -43,6 +43,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { useAsyncLock } from '../../../UseAsyncLock';
 import ClearIcon from "@mui/icons-material/Clear";
+import { Country, State } from "country-state-city";
 
 function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   editLead = null, }) {
@@ -131,6 +132,8 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   const [lead, setLead] = useState([])
   const [searchType, setSearchType] = useState("CustomerName");
 
+  const [stateList, setStateList] = useState([]);
+
   const CustPhnInputRef = useRef(null)
   const ProductsInputRef = useRef(null)
   const TransDetInputRef = useRef(null)
@@ -143,6 +146,29 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       // Replace deptid with your actual property
     )
     : [];
+
+
+  const countries = Country.getAllCountries().sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  const handleCountryChange = (selectedCountry) => {
+    setLeadSourceLocation(selectedCountry || "");
+    setPlace("");
+
+    const countryObj = countries.find(
+      (country) => country.name === selectedCountry
+    );
+
+    if (countryObj) {
+      const states = State.getStatesOfCountry(countryObj.isoCode)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      setStateList(states);
+    } else {
+      setStateList([]);
+    }
+  };
 
   //===== Fetch All Leads Data =====
   const fetchAllData = async () => {
@@ -212,7 +238,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
   };
 
   const canEditLead = !isEditedState || isAdmin ||
-    (role === "Staff" && Number(selectedStaff) === Number(empId));
+    (Number(selectedStaff) === Number(empId));
 
 
   useEffect(() => {
@@ -285,7 +311,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   }
 
-  console.log("Lead", leadId)
 
   const getLead = async (selectedLeadCode) => {
     try {
@@ -315,22 +340,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
         setSelectedStaff(data.AssignId || "");
         setContactperson(data.ContactedPerson || "");
         setSelectedStaff(data.AssignId || "");
-
-        if (data.AssignId) {
-          const assignedStaff = allStaff.find(
-            staff => Number(staff.ahmst_key) === Number(data.AssignId)
-          );
-
-          if (assignedStaff) {
-            setFilteredStaff(prev => {
-              const exists = prev.some(
-                staff => Number(staff.ahmst_key) === Number(data.AssignId)
-              );
-
-              return exists ? prev : [...prev, assignedStaff];
-            });
-          }
-        }
         setSelectedLeadSource(data.LeadSourceId || "");
         setLeadSourceLocation(data.LeadLocation || "");
 
@@ -367,6 +376,18 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       //     setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const countryObj = countries.find((c) => c.name === leadSourceLocation);
+
+    if (countryObj) {
+      const states = State.getStatesOfCountry(countryObj.isoCode)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setStateList(states);
+    } else {
+      setStateList([]);
+    }
+  }, [leadSourceLocation]);
 
   //===== Add Item to Enquired Table =====
   const handleAddItem = () => {
@@ -528,6 +549,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     setValidationDialogOpen(false);
     setValidationMessage("");
     setFocusField("");
+    setStateList([]);
   };
 
 
@@ -550,11 +572,6 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
       console.log("error while fetching all data", error);
     }
   };
-
-<<<<<<< HEAD
-  console.log("iseditingstate", isEditedState)
-=======
->>>>>>> cf6ecfcad3c0664ee9916ce2a072b58f43f692e2
 
   //===== Fetch Masters Data =====
   const fetchMasters = async () => {
@@ -609,28 +626,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
     }
   };
 
-  const filteredStaff = (() => {
-    // When editing/fetching an existing lead,
-    // show all staff so the existing assigned person can be displayed.
-    if (isEditedState) {
-      return allStaff;
-    }
 
-    // Admin can select any staff for a new lead
-    if (isAdmin) {
-      return allStaff.filter(
-        (staff) =>
-          staff.DeptName?.toLowerCase() === "sales" ||
-          staff.DeptName?.toLowerCase() === "developer" ||
-          staff.UserGroup?.toLowerCase() === "administrator"
-      );
-    }
-
-    // Normal staff: only logged-in user for a NEW lead
-    return allStaff.filter(
-      (staff) => Number(staff.ahmst_key) === Number(empId)
-    );
-  })();
   // Highlight Text
   function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1060,9 +1056,49 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
 
 
+  // Sales staff + Administrators
+  const salesAndAdmins = allStaff.filter(
+    (staff) =>
+      staff.DeptName?.toLowerCase() === "sales" ||
+      staff.UserGroup?.toLowerCase() === "administrator"
+  );
 
-  const staffOptions = isSearchFetched ? allStaff : filteredStaff;
+  // Assigned staff of the fetched/edited lead
+  const originalAssignId = lead?.AssignId ?? editLead?.AssignId ?? null;
 
+  const staffOptions = (() => {
+    // ===== ADMIN =====
+    // New lead or fetched lead -> Sales + Admins only.
+    // Also keep the lead's original / currently selected staff so the value
+    // still shows even if that person is not Sales/Admin.
+    if (isAdmin) {
+      const extraIds = [originalAssignId, selectedStaff]
+        .filter(Boolean)
+        .map(Number);
+
+      const extras = allStaff.filter(
+        (staff) =>
+          extraIds.includes(Number(staff.ahmst_key)) &&
+          !salesAndAdmins.some(s => Number(s.ahmst_key) === Number(staff.ahmst_key))
+      );
+
+      return [...extras, ...salesAndAdmins];
+    }
+
+    // ===== STAFF: fetched / edited lead =====
+    // Field is disabled, just show the assigned person
+    if (isEditedState) {
+      return allStaff.filter(
+        (staff) => Number(staff.ahmst_key) === Number(selectedStaff)
+      );
+    }
+
+    // ===== STAFF: new lead =====
+    // Only the logged-in user
+    return allStaff.filter(
+      (staff) => Number(staff.ahmst_key) === Number(empId)
+    );
+  })();
   return (
 
 
@@ -1495,26 +1531,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
 
 
                       {/* Row 3: Place, Assign to, Lead Source, Lead Source location */}
-                      <Grid item xs={12} sm={6} md={3}>
-                        <TextField
-                          label="Place"
-                          type="text"
-                          size="small"
-                          fullWidth
-                          value={place}
-                          onChange={(e) => setPlace(e.target.value)}
-                          sx={{
-                            backgroundColor: '#fff',
-                            '& input': {
-                              padding: '8px',
-                              fontSize: '0.95rem',
-                              '&:focus': {
-                                backgroundColor: 'var(--focus-bg-color)'
-                              }
-                            }
-                          }}
-                        />
-                      </Grid>
+
 
                       <Grid item xs={12} sm={6} md={3}>
                         <TextField
@@ -1523,7 +1540,7 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                           fullWidth
                           select
                           value={selectedStaff}
-                          disabled={isSearchFetched}
+                          disabled={isSearchFetched && !isAdmin}
                           onChange={(e) => setSelectedStaff(e.target.value)}
                           sx={{
                             backgroundColor: '#fff',
@@ -1599,27 +1616,69 @@ function Leads({ openLeadModal, setOpenLeadModal, size = 'xl', isEdited = false,
                         <Autocomplete
                           size="small"
                           fullWidth
-                          freeSolo
-                          options={["Kerala", "Tamil Nadu"]}
-                          value={leadSourceLocation || ""}
+                          options={countries || ''}
+                          getOptionLabel={(option) => option.name || ""}
+                          value={
+                            countries.find(
+                              (c) => c.name === leadSourceLocation
+                            ) || null
+                          }
                           onChange={(event, newValue) => {
-                            setLeadSourceLocation(newValue || "");
+                            handleCountryChange(newValue?.name || "");
                           }}
-                          onInputChange={(event, newInputValue) => {
-                            setLeadSourceLocation(newInputValue);
-                          }}
+                          renderOption={(props, option, { inputValue }) => (
+                            <li {...props} key={option.isoCode}>
+                              {highlightText(option.name, inputValue)}
+                            </li>
+                          )}
                           renderInput={(params) => (
                             <TextField
                               {...params}
                               label="Lead Source Location"
                               sx={{
-                                backgroundColor: "#fff",
-                                "& input": {
-                                  padding: "8px",
-                                  fontSize: "0.95rem",
-                                  "&:focus": {
-                                    backgroundColor: "var(--focus-bg-color)",
-                                  },
+                                backgroundColor: '#fff',
+                                '& .MuiOutlinedInput-root.Mui-focused': {
+                                  backgroundColor: 'var(--focus-bg-color)',
+                                },
+                                '& .MuiSelect-select': {
+                                  padding: '8px',
+                                  fontSize: '0.95rem',
+                                },
+                              }}
+                            />
+                          )}
+                        />
+                      </Grid>
+
+
+                      <Grid item xs={12} sm={6} md={3}>
+                        <Autocomplete
+                          size="small"
+                          fullWidth
+                          options={stateList}
+                          getOptionLabel={(option) => option.name || ""}
+                          value={stateList.find((s) => s.name === place) || null}
+                          onChange={(event, newValue) => {
+                            setPlace(newValue?.name || "");
+                          }}
+                          disabled={!leadSourceLocation}
+                          renderOption={(props, option, { inputValue }) => (
+                            <li {...props} key={`${option.countryCode}-${option.isoCode}`}>
+                              {highlightText(option.name, inputValue)}
+                            </li>
+                          )}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="State"
+                              sx={{
+                                backgroundColor: '#fff',
+                                '& .MuiOutlinedInput-root.Mui-focused': {
+                                  backgroundColor: 'var(--focus-bg-color)',
+                                },
+                                '& .MuiSelect-select': {
+                                  padding: '8px',
+                                  fontSize: '0.95rem',
                                 },
                               }}
                             />
